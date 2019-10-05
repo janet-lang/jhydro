@@ -292,6 +292,106 @@ static Janet cfun_kdf_derive_from_key(int32_t argc, Janet *argv) {
     }
     return janet_wrap_string(janet_string_end(subkey));
 }
+
+/*************************/
+/* Public Key Signatures */
+/*************************/
+
+static Janet util_make_keypair(hydro_sign_keypair *kp) {
+    Janet pk = janet_stringv(kp->pk, hydro_sign_PUBLICKEYBYTES);
+    Janet sk = janet_stringv(kp->sk, hydro_sign_SECRETKEYBYTES);
+    JanetKV *st = janet_struct_begin(2);
+    janet_struct_put(st, janet_ckeywordv("public-key"), pk);
+    janet_struct_put(st, janet_ckeywordv("secret-key"), sk);
+    return janet_wrap_struct(janet_struct_end(st));
+}
+
+static Janet cfun_sign_keygen(int32_t argc, Janet *argv) {
+    hydro_sign_keypair kp;
+    (void) argv;
+    janet_fixarity(argc, 0);
+    hydro_sign_keygen(&kp);
+    return util_make_keypair(&kp);
+}
+
+static Janet cfun_sign_keygen_deterministic(int32_t argc, Janet *argv) {
+    hydro_sign_keypair kp;
+    janet_fixarity(argc, 1);
+    JanetByteView seed = util_getnbytes(argv, 0, hydro_sign_SEEDBYTES);
+    hydro_sign_keygen_deterministic(&kp, seed.bytes);
+    return util_make_keypair(&kp);
+}
+
+static Janet cfun_sign_create(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 3);
+    JanetByteView msg = janet_getbytes(argv, 0);
+    JanetByteView ctx = util_getnbytes(argv, 1, hydro_sign_CONTEXTBYTES);
+    JanetByteView sk = util_getnbytes(argv, 2, hydro_sign_SECRETKEYBYTES);
+    uint8_t *csig = janet_string_begin(hydro_sign_BYTES);
+    int result = hydro_sign_create(csig, msg.bytes, msg.len, ctx.bytes, sk.bytes);
+    if (result) {
+        janet_panic("failed to create signature");
+    }
+    return janet_wrap_string(janet_string_end(csig));
+}
+
+static Janet cfun_sign_verify(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 4);
+    JanetByteView csig = util_getnbytes(argv, 0, hydro_sign_BYTES);
+    JanetByteView msg = janet_getbytes(argv, 1);
+    JanetByteView ctx = util_getnbytes(argv, 2, hydro_sign_CONTEXTBYTES);
+    JanetByteView pk = util_getnbytes(argv, 3, hydro_sign_PUBLICKEYBYTES);
+    return janet_wrap_boolean(!hydro_sign_verify(
+                csig.bytes, msg.bytes, msg.len, ctx.bytes, pk.bytes));
+}
+
+static const JanetAbstractType SignState = {
+    "jhydro/sign-state", NULL, NULL, NULL, NULL, NULL, NULL, NULL
+};
+
+static Janet cfun_sign_new(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 1);
+    JanetByteView ctx = util_getnbytes(argv, 0, hydro_sign_CONTEXTBYTES);
+    hydro_sign_state *state = janet_abstract(&SignState, sizeof(hydro_sign_state));
+    int result = hydro_sign_init(state, ctx.bytes);
+    if (result) {
+        janet_panic("failed to create signature state");
+    }
+    return janet_wrap_abstract(state);
+}
+
+static Janet cfun_sign_update(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 2);
+    hydro_sign_state *state = janet_getabstract(argv, 0, &SignState);
+    JanetByteView msg = janet_getbytes(argv, 1);
+    int result = hydro_sign_update(state, msg.bytes, msg.len);
+    if (result) {
+        janet_panic("failed to update signature state");
+    }
+    return argv[0];
+}
+
+static Janet cfun_sign_final_create(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 2);
+    hydro_sign_state *state = janet_getabstract(argv, 0, &SignState);
+    JanetByteView sk = util_getnbytes(argv, 1, hydro_sign_SECRETKEYBYTES);
+    uint8_t *csig = janet_string_begin(hydro_sign_BYTES);
+    int result = hydro_sign_final_create(state, csig, sk.bytes);
+    if (result) {
+        janet_panic("failed to create signature");
+    }
+    return janet_wrap_string(janet_string_end(csig));
+}
+
+static Janet cfun_sign_final_verify(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 3);
+    hydro_sign_state *state = janet_getabstract(argv, 0, &SignState);
+    JanetByteView csig = util_getnbytes(argv, 1, hydro_sign_BYTES);
+    JanetByteView pk = util_getnbytes(argv, 2, hydro_sign_PUBLICKEYBYTES);
+    int result = hydro_sign_final_verify(state, csig.bytes, pk.bytes);
+    return janet_wrap_boolean(!result);
+}
+
 /****************/
 /* Module Entry */
 /****************/
@@ -322,7 +422,7 @@ static const JanetReg cfuns[] = {
         "Generate a key suitable for use in hashing. The key is a buffer of at "
         "least 32 bytes. If a buffer buf is provided, the first 32 bytes of buf "
         "will be set to a new random key. Returns a key buffer."},
-    {"hash/new", cfun_hash_new, "(jhydro/hash/new ctx key)\n\n"
+    {"hash/new-state", cfun_hash_new, "(jhydro/hash/new-state ctx key)\n\n"
         "Create a new hash-state. Takes a context ctx and a key and returns a new abstract type, "
         "jhydro/hash-state. Both ctx and key should be byte sequences, of at least lengths 8 and 32 "
         "respectively. Returns the new state."},
@@ -367,6 +467,37 @@ static const JanetReg cfuns[] = {
         "a positive integer that represents the key id, and ctx, which is "
         "an 8 byte string that is usually an application constant. Finally, the "
         "last parameter is the master key. Returns a string of length sublen."},
+    /* Public Key Signatures */
+    {"sign/keygen", cfun_sign_keygen, "(jhydro/sign/keygen)\n\n"
+        "Create a random key pair for public key signing. Returns a struct containing a "
+        ":public-key and a :secret-key as strings."},
+    {"sign/keygen-deterministic", cfun_sign_keygen_deterministic,
+        "(jhydro/sign/keygen-deterministic seed)\n\n"
+        "Create a key pair from a seed. Seed should be a byte sequence of at least "
+        "32 bytes; jhydro/random/buf should work well. Returns a struct of two key value "
+        "pairs, a :secret-key and a :public-key. Each key is a string."},
+    {"sign/create", cfun_sign_create, "(jhydro/sign/create msg ctx sk)\n\n"
+        "Create a new sigature from a message, ctx, and secret key. The message "
+        "can be any byte sequence, the context ctx should be a byte sequence of at least "
+        "8 bytes, and the secret key sk should be secret key as generated from jhydro/sign/keygen or "
+        "jhydro/sign/keygen-deterministic. Returns a signature, which is a 64 byte string."},
+    {"sign/verify", cfun_sign_verify, "(jhydro/sign/verify csig msg ctx pk)\n\n"
+        "Check a signature to determine if a message is authentic. csig is the signature as "
+        "generated by jhydro/sign/create or jhydro/sign/final-create, msg is the message that "
+        "we are checking, ctx is the context string, and pk is the public key. Returns a boolean, "
+        "true if the signature is valid, false otherwise."},
+    {"sign/new-state", cfun_sign_new, "(jhydro/sign/new-state ctx)\n\n"
+        "Create a new state machine for generating a signature. A state machine allows "
+        "processing a message in chunks to generate a signature. A string ctx of at least 8 bytes "
+        "is also required, and can be a hrad coded string. Returns a new jhydro/sign-state."},
+    {"sign/update", cfun_sign_update, "(jhydro/sign/update state msg)\n\n"
+        "Process a message chunk for generating a signature. Returns the modified signature state."},
+    {"sign/final-create", cfun_sign_final_create, "(jhydro/sign/final-create state sk)\n\n"
+        "Create a signature from the sign-state. Takes a jhydro/sign-state state and a secret key sk. "
+        "Returns the signature and also modifies the state."},
+    {"sign/final-verify", cfun_sign_final_verify, "(jhydro/sign/final-verify state csig pk)\n\n"
+        "Verify a signature with a public key. Given a sign-state state, signature csig, and "
+        "public key pk, return true if csig is valid, otherwise false."},
     {NULL, NULL, NULL}
 };
 
