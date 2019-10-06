@@ -2,7 +2,7 @@
 
 Lightweight cryptographic and random number generation utils for Janet. Based on [libhydrogen](https://github.com/jedisct1/libhydrogen/).
 
-Bindings for most of the libhydrogen API are available so far, with the exception of key sharing APIs.
+Bindings for most of the libhydrogen API are available so far, with the exception of the key sharing API.
 
 ```clojure
 (use jhydro)
@@ -15,6 +15,13 @@ Bindings for most of the libhydrogen API are available so far, with the exceptio
 (for i 0 10
     (random/buf buf 64))
 ```
+
+## Documentation
+
+Documentation can be built with [Mendoza](https://github.com/bakpakin/mendoza).
+First, install the latest verion of mendoza, and then run `mdz && mdz serve`
+from the jhydro repository directory. You can then navigate to
+`http://localhost:8000` to see the documentation.
 
 ## Building
 

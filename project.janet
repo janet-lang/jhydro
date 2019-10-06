@@ -1,5 +1,3 @@
-(import "./gendoc" :as gen)
-
 (declare-project
   :name "jhydro"
   :author "Calvin Rose"

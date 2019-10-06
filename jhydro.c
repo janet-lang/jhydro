@@ -698,52 +698,55 @@ JANET_MODULE_ENTRY(JanetTable *env) {
     /* Constants */
 
     /* Random */
-    janet_def(env, "random/SEEDBYTES", janet_wrap_integer(hydro_random_SEEDBYTES),
+    janet_def(env, "random/seed-bytes", janet_wrap_integer(hydro_random_SEEDBYTES),
             "Number of bytes in a seed for the RNG.");
 
     /* Hashing */
-    janet_def(env, "hash/BYTES", janet_wrap_integer(hydro_hash_BYTES),
+    janet_def(env, "hash/bytes", janet_wrap_integer(hydro_hash_BYTES),
             "Number of bytes in a generic, simple hash.");
-    janet_def(env, "hash/BYTES-MAX", janet_wrap_integer(hydro_hash_BYTES_MAX),
+    janet_def(env, "hash/bytes-max", janet_wrap_integer(hydro_hash_BYTES_MAX),
             "Maximum number of bytes allowed when creating a keyed hash.");
-    janet_def(env, "hash/BYTES-MIN", janet_wrap_integer(hydro_hash_BYTES_MIN),
+    janet_def(env, "hash/bytes-min", janet_wrap_integer(hydro_hash_BYTES_MIN),
             "Minimum number of bytes allowed when creating a keyed hash.");
-    janet_def(env, "hash/CONTEXTBYTES", janet_wrap_integer(hydro_hash_CONTEXTBYTES),
+    janet_def(env, "hash/context-bytes", janet_wrap_integer(hydro_hash_CONTEXTBYTES),
             "Number of bytes required in context buffer for hashing.");
-    janet_def(env, "hash/KEYBYTES", janet_wrap_integer(hydro_hash_KEYBYTES),
+    janet_def(env, "hash/key-bytes", janet_wrap_integer(hydro_hash_KEYBYTES),
             "Number of bytes in a key required for hashing.");
 
     /* Secretbox */
-    janet_def(env, "secretbox/CONTEXTBYTES",
+    janet_def(env, "secretbox/context-bytes",
             janet_wrap_integer(hydro_secretbox_CONTEXTBYTES),
             "Number of bytes in a context for secretbox functions.");
-    janet_def(env, "secretbox/HEADERBYTES", janet_wrap_integer(hydro_secretbox_HEADERBYTES),
+    janet_def(env, "secretbox/header-bytes", janet_wrap_integer(hydro_secretbox_HEADERBYTES),
             "Number of bytes in the header of an encrypted message.");
-    janet_def(env, "secretbox/KEYBYTES", janet_wrap_integer(hydro_secretbox_KEYBYTES),
+    janet_def(env, "secretbox/key-bytes", janet_wrap_integer(hydro_secretbox_KEYBYTES),
             "Number of bytes in a secretbox key.");
-    janet_def(env, "secretbox/PROBEBYTES", janet_wrap_integer(hydro_secretbox_PROBEBYTES),
+    janet_def(env, "secretbox/probe-bytes", janet_wrap_integer(hydro_secretbox_PROBEBYTES),
             "Number of bytes in a secretbox probe.");
 
     /* KDF */
-    janet_def(env, "kdf/CONTEXTBYTES", janet_wrap_integer(hydro_kdf_CONTEXTBYTES),
+    janet_def(env, "kdf/context-bytes", janet_wrap_integer(hydro_kdf_CONTEXTBYTES),
             "Number of bytes in context argument to jhydro/kdf functions.");
-    janet_def(env, "kdf/KEYBYTES", janet_wrap_integer(hydro_kdf_KEYBYTES),
+    janet_def(env, "kdf/key-bytes", janet_wrap_integer(hydro_kdf_KEYBYTES),
             "Number of bytes in a kdf key.");
-    janet_def(env, "kdf/BYTES-MAX", janet_wrap_integer(hydro_kdf_BYTES_MAX),
+    janet_def(env, "kdf/bytes-max", janet_wrap_integer(hydro_kdf_BYTES_MAX),
             "Maximum number of bytes allowed in kdf generated key.");
-    janet_def(env, "kdf/BYTES-MIN", janet_wrap_integer(hydro_kdf_BYTES_MIN),
+    janet_def(env, "kdf/bytes-min", janet_wrap_integer(hydro_kdf_BYTES_MIN),
             "Minimum number of bytes allowed in kdf generated key.");
 
     /* Signing */
-    janet_def(env, "sign/BYTES", janet_wrap_integer(hydro_sign_BYTES),
+    janet_def(env, "sign/bytes", janet_wrap_integer(hydro_sign_BYTES),
             "Number of bytes in a signature.");
-    janet_def(env, "sign/CONTEXTBYTES", janet_wrap_integer(hydro_sign_CONTEXTBYTES),
+    janet_def(env, "sign/context-bytes", janet_wrap_integer(hydro_sign_CONTEXTBYTES),
             "Number of bytes needed for a signature context.");
-    janet_def(env, "sign/PUBLICKEYBYTES", janet_wrap_integer(hydro_sign_PUBLICKEYBYTES),
+    janet_def(env, "sign/public-key-bytes", janet_wrap_integer(hydro_sign_PUBLICKEYBYTES),
             "Number of bytes in a public key for making signatures.");
-    janet_def(env, "sign/SECRETKEYBYTES", janet_wrap_integer(hydro_sign_SECRETKEYBYTES),
+    janet_def(env, "sign/secret-key-bytes", janet_wrap_integer(hydro_sign_SECRETKEYBYTES),
             "Number of bytes in a secret key for making signatures.");
-    janet_def(env, "sign/SEEDBYTES", janet_wrap_integer(hydro_sign_SEEDBYTES),
+    janet_def(env, "sign/seed-bytes", janet_wrap_integer(hydro_sign_SEEDBYTES),
             "Number of bytes in a seed for generating a key.");
+
+    janet_def(env, "sign/bonk", janet_ckeywordv("Hiyaboi!"),
+            "Just :Hiyaboi!");
 
 }

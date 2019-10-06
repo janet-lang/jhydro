@@ -4,8 +4,6 @@
  :template "mdzdoc/main.html"}
 ---
 
-#### Version 0.0.0
-
 # JHydro Documentation
 
 JHydro is a lightweight cryptographic library for Janet. It is a binding to
@@ -20,9 +18,27 @@ implement your own secure protocol over an insecure network, however.
 
 @hr
 
-## Definition Index
+## Random Number Generation
 
-@api-index[build/jhydro]
+@api-index[build/jhydro][random/]
+
+## Generic Hashing
+
+@api-index[build/jhydro][hash/]
+
+## Key Derivation Functions
+
+@api-index[build/jhydro][kdf/]
+
+## Secret Box
+
+@api-index[build/jhydro][secretbox/]
+
+## Password Hashing
+
+@api-index[build/jhydro][pwhash/]
+
+@hr
 
 ## Api Docs
 
