@@ -4,9 +4,9 @@
  :template "mdzdoc/main.html"}
 ---
 
-# JHydro Documentation
+# Jhydro Documentation
 
-JHydro is a lightweight cryptographic library for Janet. It is a binding to
+Jhydro is a lightweight cryptographic library for Janet. It is a binding to
 libhydrogen, which can be found at @link[https://github.com/jedisct1/libhydrogen].
 Jhydro is a direct binding to libhydrogen that supports cryptographic random
 number generation, hashing, symmetric key encryption, password hashing, key
