@@ -49,10 +49,19 @@ static JanetBuffer *util_keygen_prep(int32_t argc, const Janet *argv, int len) {
 /* Get a byte view with at least nbytes bytes. Otherwise the same janet_getbytes. */
 static JanetByteView util_getnbytes(const Janet *argv, int32_t n, int nbytes) {
     JanetByteView view = janet_getbytes(argv, n);
-    if (view.len < nbytes) {
-        janet_panicf("slot %d expected at least %d bytes, got %d", n, nbytes, view.len);
+    if (view.len != nbytes) {
+        janet_panicf("bad slot #%d, expected %d bytes, got %d", n, nbytes, view.len);
     }
     return view;
+}
+
+/* Get a positive, 32 bit integer */
+static int32_t util_getnat(const Janet *argv, int32_t n) {
+    int32_t x = janet_getinteger(argv, n);
+    if (x < 0) {
+        janet_panicf("bad slot #%d, expected non-negative integer, got %d", n, x);
+    }
+    return x;
 }
 
 /****************************/
@@ -183,6 +192,29 @@ static Janet cfun_hash_final(int32_t argc, Janet *argv) {
     int result = hydro_hash_final(state, out, outlen);
     if (result) {
         janet_panic("failed to generate hash");
+    }
+    return janet_wrap_string(janet_string_end(out));
+}
+
+static Janet cfun_hash_hash(int32_t argc, Janet *argv) {
+    janet_arity(argc, 3, 4);
+    int32_t size = util_getnat(argv, 0);
+    if (size < hydro_hash_BYTES_MIN || size > hydro_hash_BYTES_MAX)
+        janet_panicf("hash size must be in range [%d, %d], got %v",
+                hydro_hash_BYTES_MIN, hydro_hash_BYTES_MAX,
+                argv[0]);
+    JanetByteView msg = janet_getbytes(argv, 1);
+    JanetByteView ctx = util_getnbytes(argv, 2, hydro_hash_CONTEXTBYTES);
+    JanetByteView key;
+    key.bytes = NULL;
+    key.len = 0;
+    if (argc >= 4 && !janet_checktype(argv[4], JANET_NIL)) {
+        key = util_getnbytes(argv, 3, hydro_hash_KEYBYTES);
+    }
+    uint8_t *out = janet_string_begin(size);
+    int result = hydro_hash_hash(out, size, msg.bytes, msg.len, ctx.bytes, key.bytes);
+    if (result) {
+        janet_panic("failed to hash message");
     }
     return janet_wrap_string(janet_string_end(out));
 }
@@ -392,6 +424,98 @@ static Janet cfun_sign_final_verify(int32_t argc, Janet *argv) {
     return janet_wrap_boolean(!result);
 }
 
+/*******************/
+/* Password Hashing */
+/*******************/
+
+static Janet cfun_pwhash_keygen(int32_t argc, Janet *argv) {
+    JanetBuffer *buffer = util_keygen_prep(argc, argv, hydro_pwhash_MASTERKEYBYTES);
+    hydro_pwhash_keygen(buffer->data);
+    return janet_wrap_buffer(buffer);
+}
+
+static Janet cfun_pwhash_deterministic(int32_t argc, Janet *argv) {
+    janet_arity(argc, 4, 7);
+    int32_t h_len = util_getnat(argv, 0);
+    JanetByteView passwd = janet_getbytes(argv, 1);
+    JanetByteView ctx = util_getnbytes(argv, 2, hydro_pwhash_CONTEXTBYTES);
+    JanetByteView mk = util_getnbytes(argv, 3, hydro_pwhash_MASTERKEYBYTES);
+    uint64_t opslimit = 2000;
+    size_t memlimit = 2000;
+    uint8_t threads = 4;
+    if (argc >= 5) {
+        opslimit = (uint64_t) util_getnat(argv, 4);
+    }
+    if (argc >= 6) {
+        memlimit = (size_t) util_getnat(argv, 5);
+    }
+    if (argc >= 7) {
+        int32_t threads_int = util_getnat(argv, 6);
+        if (threads_int > 255) {
+            janet_panicf("expected integer in range [0, 255] for threads, got %v", argv[6]);
+        }
+        threads = (uint8_t) threads_int;
+    }
+    uint8_t *str = janet_string_begin(h_len);
+    int result = hydro_pwhash_deterministic(str, h_len, passwd.bytes, passwd.len,
+            ctx.bytes, mk.bytes, opslimit, memlimit, threads);
+    if (result) {
+        janet_panic("failed to hash password");
+    }
+    return janet_wrap_string(janet_string_end(str));
+}
+
+static Janet cfun_pwhash_create(int32_t argc, Janet *argv) {
+    janet_arity(argc, 2, 5);
+    JanetByteView passwd = janet_getbytes(argv, 0);
+    JanetByteView mk = util_getnbytes(argv, 1, hydro_pwhash_MASTERKEYBYTES);
+    uint64_t opslimit = 2000;
+    size_t memlimit = 2000;
+    uint8_t threads = 4;
+    if (argc >= 3) {
+        opslimit = (uint64_t) util_getnat(argv, 2);
+    }
+    if (argc >= 4) {
+        memlimit = (size_t) util_getnat(argv, 3);
+    }
+    if (argc >= 5) {
+        int32_t threads_int = util_getnat(argv, 4);
+        if (threads_int > 255) {
+            janet_panicf("expected integer in range [0, 255] for threads, got %v", argv[6]);
+        }
+        threads = (uint8_t) threads_int;
+    }
+    uint8_t *stored = janet_string_begin(hydro_pwhash_STOREDBYTES);
+    int result = hydro_pwhash_create(stored, passwd.bytes,
+            passwd.len, mk.bytes, opslimit, memlimit, threads);
+    if (result) {
+        janet_panic("failed hashing password");
+    }
+    return janet_wrap_string(janet_string_end(stored));
+}
+
+/*
+int hydro_pwhash_verify(const uint8_t stored[hydro_pwhash_STOREDBYTES], const char *passwd,
+                        size_t passwd_len, const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES],
+                        uint64_t opslimit_max, size_t memlimit_max, uint8_t threads_max);
+
+int hydro_pwhash_derive_static_key(uint8_t *static_key, size_t static_key_len,
+                                   const uint8_t stored[hydro_pwhash_STOREDBYTES],
+                                   const char *passwd, size_t passwd_len,
+                                   const char    ctx[hydro_pwhash_CONTEXTBYTES],
+                                   const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES],
+                                   uint64_t opslimit_max, size_t memlimit_max, uint8_t threads_max);
+
+int hydro_pwhash_reencrypt(uint8_t       stored[hydro_pwhash_STOREDBYTES],
+                           const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES],
+                           const uint8_t new_master_key[hydro_pwhash_MASTERKEYBYTES]);
+
+int hydro_pwhash_upgrade(uint8_t       stored[hydro_pwhash_STOREDBYTES],
+                         const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES], uint64_t opslimit,
+                         size_t memlimit, uint8_t threads);
+ */
+
+
 /****************/
 /* Module Entry */
 /****************/
@@ -431,6 +555,9 @@ static const JanetReg cfuns[] = {
     {"hash/final", cfun_hash_final, "(jhydro/hash/final state len)\n\n"
         "Get the final hash after digesting all of the input as a string. The resulting "
         "hash will be a string of length len."},
+    {"hash/hash", cfun_hash_hash, "(jhydro/hash/hash size input ctx &opt key)\n\n"
+        "Hash some input bytes into an output string of length size. Optionally provide "
+        "a key that can be used to generate different hashes on the same input."},
     /* Secret Box - symmetric encryption */
     {"secretbox/keygen", cfun_secretbox_keygen, "(jyhdro/secretbox/keygen)\n\n"
         "Generate a key suitable for secretbox. The returned key is a 32 byte buffer."},
@@ -498,10 +625,76 @@ static const JanetReg cfuns[] = {
     {"sign/final-verify", cfun_sign_final_verify, "(jhydro/sign/final-verify state csig pk)\n\n"
         "Verify a signature with a public key. Given a sign-state state, signature csig, and "
         "public key pk, return true if csig is valid, otherwise false."},
+    /* Password Hashing */
+    {"pwhash/keygen", cfun_pwhash_keygen, "(jhydro/pwhash/keygen &opt buf)\n\n"
+        "Generate a master key for use in hashing passwords. The master key is used to "
+        "encrypt all hashed passwords for an extra level of security. Returns a buffer with "
+        "the new key."},
+    {"pwhash/deterministic", cfun_pwhash_deterministic,
+        "(jhydro/pwhash/deterministic hlen passwd ctx masterkey &opt opslimit memlimit threads)\n\n"
+            "Hash a password to produce a high entropy key. "
+            "The returned hashed password is a string of length hlen."},
+    {"pwhash/create", cfun_pwhash_create,
+        "(jhydro/pwhash/create passwd masterkey &opt opslimit memlimit threads)\n\n"
+            "Hash a password and get a blob that can be safely stored in a database. "
+            "The returned result is a 128 byte string. Can take optional parameters to tune "
+            "the difficulty of the hash."},
     {NULL, NULL, NULL}
 };
 
 JANET_MODULE_ENTRY(JanetTable *env) {
     hydro_init();
     janet_cfuns(env, "jhydro", cfuns);
+
+    /* Constants */
+
+    /* Random */
+    janet_def(env, "random/SEEDBYTES", janet_wrap_integer(hydro_random_SEEDBYTES),
+            "Number of bytes in a seed for the RNG.");
+
+    /* Hashing */
+    janet_def(env, "hash/BYTES", janet_wrap_integer(hydro_hash_BYTES),
+            "Number of bytes in a generic, simple hash.");
+    janet_def(env, "hash/BYTES-MAX", janet_wrap_integer(hydro_hash_BYTES_MAX),
+            "Maximum number of bytes allowed when creating a keyed hash.");
+    janet_def(env, "hash/BYTES-MIN", janet_wrap_integer(hydro_hash_BYTES_MIN),
+            "Minimum number of bytes allowed when creating a keyed hash.");
+    janet_def(env, "hash/CONTEXTBYTES", janet_wrap_integer(hydro_hash_CONTEXTBYTES),
+            "Number of bytes required in context buffer for hashing.");
+    janet_def(env, "hash/KEYBYTES", janet_wrap_integer(hydro_hash_KEYBYTES),
+            "Number of bytes in a key required for hashing.");
+
+    /* Secretbox */
+    janet_def(env, "secretbox/CONTEXTBYTES",
+            janet_wrap_integer(hydro_secretbox_CONTEXTBYTES),
+            "Number of bytes in a context for secretbox functions.");
+    janet_def(env, "secretbox/HEADERBYTES", janet_wrap_integer(hydro_secretbox_HEADERBYTES),
+            "Number of bytes in the header of an encrypted message.");
+    janet_def(env, "secretbox/KEYBYTES", janet_wrap_integer(hydro_secretbox_KEYBYTES),
+            "Number of bytes in a secretbox key.");
+    janet_def(env, "secretbox/PROBEBYTES", janet_wrap_integer(hydro_secretbox_PROBEBYTES),
+            "Number of bytes in a secretbox probe.");
+
+    /* KDF */
+    janet_def(env, "kdf/CONTEXTBYTES", janet_wrap_integer(hydro_kdf_CONTEXTBYTES),
+            "Number of bytes in context argument to jhydro/kdf functions.");
+    janet_def(env, "kdf/KEYBYTES", janet_wrap_integer(hydro_kdf_KEYBYTES),
+            "Number of bytes in a kdf key.");
+    janet_def(env, "kdf/BYTES_MAX", janet_wrap_integer(hydro_kdf_BYTES_MAX),
+            "Maximum number of bytes allowed in kdf generated key.");
+    janet_def(env, "kdf/BYTES_MIN", janet_wrap_integer(hydro_kdf_BYTES_MIN),
+            "Minimum number of bytes allowed in kdf generated key.");
+
+    /* Signing */
+    janet_def(env, "sign/BYTES", janet_wrap_integer(hydro_sign_BYTES),
+            "Number of bytes in a signature.");
+    janet_def(env, "sign/CONTEXTBYTES", janet_wrap_integer(hydro_sign_CONTEXTBYTES),
+            "Number of bytes needed for a signature context.");
+    janet_def(env, "sign/PUBLICKEYBYTES", janet_wrap_integer(hydro_sign_PUBLICKEYBYTES),
+            "Number of bytes in a public key for making signatures.");
+    janet_def(env, "sign/SECRETKEYBYTES", janet_wrap_integer(hydro_sign_SECRETKEYBYTES),
+            "Number of bytes in a secret key for making signatures.");
+    janet_def(env, "sign/SEEDBYTES", janet_wrap_integer(hydro_sign_SEEDBYTES),
+            "Number of bytes in a seed for generating a key.");
+
 }
