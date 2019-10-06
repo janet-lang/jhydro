@@ -428,6 +428,33 @@ static Janet cfun_sign_final_verify(int32_t argc, Janet *argv) {
 /* Password Hashing */
 /*******************/
 
+typedef struct {
+    uint64_t opslimit;
+    size_t memlimit;
+    uint8_t threads;
+} PwhashOpts;
+
+static PwhashOpts util_pwhash_opts(int32_t argc, const Janet *argv, int32_t n) {
+    PwhashOpts opts;
+    opts.opslimit = 2000;
+    opts.memlimit = 2000;
+    opts.threads = 4;
+    if (argc > n && !janet_checktype(argv[n], JANET_NIL)) {
+        opts.opslimit = (uint64_t) util_getnat(argv, n);
+    }
+    if (argc > n + 1 && !janet_checktype(argv[n], JANET_NIL)) {
+        opts.memlimit = (size_t) util_getnat(argv, n + 1);
+    }
+    if (argc > n + 2 && !janet_checktype(argv[n], JANET_NIL)) {
+        int32_t threads_int = util_getnat(argv, n + 2);
+        if (threads_int > 255) {
+            janet_panicf("expected integer in range [0, 255] for threads, got %v", argv[6]);
+        }
+        opts.threads = (uint8_t) threads_int;
+    }
+    return opts;
+}
+
 static Janet cfun_pwhash_keygen(int32_t argc, Janet *argv) {
     JanetBuffer *buffer = util_keygen_prep(argc, argv, hydro_pwhash_MASTERKEYBYTES);
     hydro_pwhash_keygen(buffer->data);
@@ -440,25 +467,10 @@ static Janet cfun_pwhash_deterministic(int32_t argc, Janet *argv) {
     JanetByteView passwd = janet_getbytes(argv, 1);
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_pwhash_CONTEXTBYTES);
     JanetByteView mk = util_getnbytes(argv, 3, hydro_pwhash_MASTERKEYBYTES);
-    uint64_t opslimit = 2000;
-    size_t memlimit = 2000;
-    uint8_t threads = 4;
-    if (argc >= 5) {
-        opslimit = (uint64_t) util_getnat(argv, 4);
-    }
-    if (argc >= 6) {
-        memlimit = (size_t) util_getnat(argv, 5);
-    }
-    if (argc >= 7) {
-        int32_t threads_int = util_getnat(argv, 6);
-        if (threads_int > 255) {
-            janet_panicf("expected integer in range [0, 255] for threads, got %v", argv[6]);
-        }
-        threads = (uint8_t) threads_int;
-    }
+    PwhashOpts opts = util_pwhash_opts(argc, argv, 4);
     uint8_t *str = janet_string_begin(h_len);
     int result = hydro_pwhash_deterministic(str, h_len, passwd.bytes, passwd.len,
-            ctx.bytes, mk.bytes, opslimit, memlimit, threads);
+            ctx.bytes, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed to hash password");
     }
@@ -469,52 +481,73 @@ static Janet cfun_pwhash_create(int32_t argc, Janet *argv) {
     janet_arity(argc, 2, 5);
     JanetByteView passwd = janet_getbytes(argv, 0);
     JanetByteView mk = util_getnbytes(argv, 1, hydro_pwhash_MASTERKEYBYTES);
-    uint64_t opslimit = 2000;
-    size_t memlimit = 2000;
-    uint8_t threads = 4;
-    if (argc >= 3) {
-        opslimit = (uint64_t) util_getnat(argv, 2);
-    }
-    if (argc >= 4) {
-        memlimit = (size_t) util_getnat(argv, 3);
-    }
-    if (argc >= 5) {
-        int32_t threads_int = util_getnat(argv, 4);
-        if (threads_int > 255) {
-            janet_panicf("expected integer in range [0, 255] for threads, got %v", argv[6]);
-        }
-        threads = (uint8_t) threads_int;
-    }
+    PwhashOpts opts = util_pwhash_opts(argc, argv, 2);
     uint8_t *stored = janet_string_begin(hydro_pwhash_STOREDBYTES);
     int result = hydro_pwhash_create(stored, passwd.bytes,
-            passwd.len, mk.bytes, opslimit, memlimit, threads);
+            passwd.len, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed hashing password");
     }
     return janet_wrap_string(janet_string_end(stored));
 }
 
-/*
-int hydro_pwhash_verify(const uint8_t stored[hydro_pwhash_STOREDBYTES], const char *passwd,
-                        size_t passwd_len, const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES],
-                        uint64_t opslimit_max, size_t memlimit_max, uint8_t threads_max);
+static Janet cfun_pwhash_verify(int32_t argc, Janet *argv) {
+    janet_arity(argc, 3, 6);
+    JanetByteView stored = util_getnbytes(argv, 0, hydro_pwhash_STOREDBYTES);
+    JanetByteView passwd = janet_getbytes(argv, 1);
+    JanetByteView mk = util_getnbytes(argv, 2, hydro_pwhash_MASTERKEYBYTES);
+    PwhashOpts opts = util_pwhash_opts(argc, argv, 3);
+    int result = hydro_pwhash_verify(stored.bytes, passwd.bytes, passwd.len,
+            mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
+    return janet_wrap_boolean(!result);
+}
 
-int hydro_pwhash_derive_static_key(uint8_t *static_key, size_t static_key_len,
-                                   const uint8_t stored[hydro_pwhash_STOREDBYTES],
-                                   const char *passwd, size_t passwd_len,
-                                   const char    ctx[hydro_pwhash_CONTEXTBYTES],
-                                   const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES],
-                                   uint64_t opslimit_max, size_t memlimit_max, uint8_t threads_max);
+static Janet cfun_pwhash_derive_static_key(int32_t argc, Janet *argv) {
+    janet_arity(argc, 5, 8);
+    int32_t klen = util_getnat(argv, 0);
+    JanetByteView stored = util_getnbytes(argv, 1, hydro_pwhash_STOREDBYTES);
+    JanetByteView passwd = janet_getbytes(argv, 2);
+    JanetByteView ctx = util_getnbytes(argv, 3, hydro_pwhash_CONTEXTBYTES);
+    JanetByteView mk = util_getnbytes(argv, 4, hydro_pwhash_MASTERKEYBYTES);
+    PwhashOpts opts = util_pwhash_opts(argc, argv, 5);
+    uint8_t *static_key = janet_string_begin(klen);
+    int result = hydro_pwhash_derive_static_key(static_key, klen, stored.bytes,
+            passwd.bytes, passwd.len, ctx.bytes, mk.bytes,
+            opts.opslimit, opts.memlimit, opts.threads);
+    if (result) {
+        janet_panic("failed to create static key");
+    }
+    return janet_wrap_string(janet_string_end(static_key));
+}
 
-int hydro_pwhash_reencrypt(uint8_t       stored[hydro_pwhash_STOREDBYTES],
-                           const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES],
-                           const uint8_t new_master_key[hydro_pwhash_MASTERKEYBYTES]);
+static Janet cfun_pwhash_reencrypt(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 3);
+    JanetByteView stored = util_getnbytes(argv, 0, hydro_pwhash_STOREDBYTES);
+    JanetByteView mk = util_getnbytes(argv, 1, hydro_pwhash_MASTERKEYBYTES);
+    JanetByteView newmk = util_getnbytes(argv, 2, hydro_pwhash_MASTERKEYBYTES);
+    uint8_t *newstored = janet_string_begin(hydro_pwhash_STOREDBYTES);
+    memcpy(newstored, stored.bytes, hydro_pwhash_STOREDBYTES);
+    int result = hydro_pwhash_reencrypt(newstored, mk.bytes, newmk.bytes);
+    if (result) {
+        janet_panic("failed to reencrypt password hash");
+    }
+    return janet_wrap_string(janet_string_end(newstored));
+}
 
-int hydro_pwhash_upgrade(uint8_t       stored[hydro_pwhash_STOREDBYTES],
-                         const uint8_t master_key[hydro_pwhash_MASTERKEYBYTES], uint64_t opslimit,
-                         size_t memlimit, uint8_t threads);
- */
-
+static Janet cfun_pwhash_upgrade(int32_t argc, Janet *argv) {
+    janet_arity(argc, 2, 5);
+    JanetByteView stored = util_getnbytes(argv, 0, hydro_pwhash_STOREDBYTES);
+    JanetByteView mk = util_getnbytes(argv, 1, hydro_pwhash_MASTERKEYBYTES);
+    PwhashOpts opts = util_pwhash_opts(argc, argv, 2);
+    uint8_t *newstored = janet_string_begin(hydro_pwhash_STOREDBYTES);
+    memcpy(newstored, stored.bytes, hydro_pwhash_STOREDBYTES);
+    int result = hydro_pwhash_upgrade(newstored, mk.bytes,
+            opts.opslimit, opts.memlimit, opts.threads);
+    if (result) {
+        janet_panic("failed to upgrade password hash");
+    }
+    return janet_wrap_string(janet_string_end(newstored));
+}
 
 /****************/
 /* Module Entry */
@@ -631,7 +664,7 @@ static const JanetReg cfuns[] = {
         "encrypt all hashed passwords for an extra level of security. Returns a buffer with "
         "the new key."},
     {"pwhash/deterministic", cfun_pwhash_deterministic,
-        "(jhydro/pwhash/deterministic hlen passwd ctx masterkey &opt opslimit memlimit threads)\n\n"
+        "(jhydro/pwhash/deterministic hlen passwd ctx master-key &opt opslimit memlimit threads)\n\n"
             "Hash a password to produce a high entropy key. "
             "The returned hashed password is a string of length hlen."},
     {"pwhash/create", cfun_pwhash_create,
@@ -639,6 +672,22 @@ static const JanetReg cfuns[] = {
             "Hash a password and get a blob that can be safely stored in a database. "
             "The returned result is a 128 byte string. Can take optional parameters to tune "
             "the difficulty of the hash."},
+    {"pwhash/verify", cfun_pwhash_verify, "(jhydro/pwhash/verify stored passwd master-key &opt opslimit memlimit threads)\n\n"
+        "Check if a password matches a stored password hash. Hashing options must be the same as "
+        "the ones used to created the stored hash."},
+    {"pwhash/derive-static-key", cfun_pwhash_derive_static_key,
+        "(jhydro/pwhash/derive-static-key keylen stored passwd ctx master-key &opt opslimit memlimit threads)\n\n"
+        "Derive a static key for used in cryptographic applications from a hashed password and other entropy "
+        "(kept in stored). Returns a string with keylen bytes."},
+    {"pwhash/reencrypt", cfun_pwhash_reencrypt,
+        "(jhydro/pwhash/reencrypt stored masterkey new-masterkey)\n\n"
+        "Re-encrypt a hashed password under a new master key without needing the original password, only "
+        "the previously hashed password and master key. Returns the new hashed password as a string."},
+    {"pwhash/upgrade", cfun_pwhash_upgrade,
+        "(jhydro/pwhash/upgrade stored masterkey &opt opslimit memlimit threads)\n\n"
+        "Change the encryption parameters of a key to make decrypting faster or slower. This can "
+        "be used to scale difficulty of password hashing in the event of hardware advancements. Returns "
+        "the new password hash as a string."},
     {NULL, NULL, NULL}
 };
 
@@ -680,9 +729,9 @@ JANET_MODULE_ENTRY(JanetTable *env) {
             "Number of bytes in context argument to jhydro/kdf functions.");
     janet_def(env, "kdf/KEYBYTES", janet_wrap_integer(hydro_kdf_KEYBYTES),
             "Number of bytes in a kdf key.");
-    janet_def(env, "kdf/BYTES_MAX", janet_wrap_integer(hydro_kdf_BYTES_MAX),
+    janet_def(env, "kdf/BYTES-MAX", janet_wrap_integer(hydro_kdf_BYTES_MAX),
             "Maximum number of bytes allowed in kdf generated key.");
-    janet_def(env, "kdf/BYTES_MIN", janet_wrap_integer(hydro_kdf_BYTES_MIN),
+    janet_def(env, "kdf/BYTES-MIN", janet_wrap_integer(hydro_kdf_BYTES_MIN),
             "Minimum number of bytes allowed in kdf generated key.");
 
     /* Signing */

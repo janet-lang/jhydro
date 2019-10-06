@@ -1,0 +1,29 @@
+{:title "Jhydro"
+ :author "Calvin Rose"
+ :license "MIT"
+ :template "mdzdoc/main.html"}
+---
+
+#### Version 0.0.0
+
+# JHydro Documentation
+
+JHydro is a lightweight cryptographic library for Janet. It is a binding to
+libhydrogen, which can be found at @link[https://github.com/jedisct1/libhydrogen].
+Jhydro is a direct binding to libhydrogen that supports cryptographic random
+number generation, hashing, symmetric key encryption, password hashing, key
+derivation functions, and public key signatures. These are all built using only
+a few built in primitives, which means that jhydro will not let you interact
+with other standard cryptographic formats such as SHA-256, AES, RSA, etc. Do
+not use jhydro if you want to implement SSL, for example. Jhydro will help you
+implement your own secure protocol over an insecure network, however.
+
+@hr
+
+## Definition Index
+
+@api-index[build/jhydro]
+
+## Api Docs
+
+@api-docs[build/jhydro]
