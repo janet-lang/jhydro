@@ -16,6 +16,16 @@ with other standard cryptographic formats such as SHA-256, AES, RSA, etc. Do
 not use jhydro if you want to implement SSL, for example. Jhydro will help you
 implement your own secure protocol over an insecure network, however.
 
+## Source code
+
+@link[https://github.com/janet-lang/jhydro]
+
+## Install
+
+@codeblock```
+[sudo] jpm install https://github.com/janet-lang/jhydro.git
+```
+
 @hr
 
 ## Random Number Generation
