@@ -18,7 +18,7 @@ implement your own secure protocol over an insecure network, however.
 
 ## Source code
 
-@link[https://github.com/janet-lang/jhydro]
+@p{@link[https://github.com/janet-lang/jhydro]}
 
 ## Install
 
