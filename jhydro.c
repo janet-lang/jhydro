@@ -746,7 +746,4 @@ JANET_MODULE_ENTRY(JanetTable *env) {
     janet_def(env, "sign/seed-bytes", janet_wrap_integer(hydro_sign_SEEDBYTES),
             "Number of bytes in a seed for generating a key.");
 
-    janet_def(env, "sign/bonk", janet_ckeywordv("Hiyaboi!"),
-            "Just :Hiyaboi!");
-
 }
