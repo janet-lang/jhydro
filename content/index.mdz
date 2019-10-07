@@ -44,6 +44,10 @@ implement your own secure protocol over an insecure network, however.
 
 @api-index[build/jhydro][secretbox/]
 
+## Signing
+
+@api-index[build/jhydro][sign/]
+
 ## Password Hashing
 
 @api-index[build/jhydro][pwhash/]
