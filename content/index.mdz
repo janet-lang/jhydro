@@ -52,6 +52,10 @@ implement your own secure protocol over an insecure network, however.
 
 @api-index[build/jhydro][pwhash/]
 
+## Utilities 
+
+@api-index[build/jhydro][util/]
+
 @hr
 
 ## Api Docs
