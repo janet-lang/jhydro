@@ -1,0 +1,13 @@
+{:title "General Purpose Hashing"
+ :author "Calvin Rose"
+ :license "MIT"
+ :template "mdzdoc/main.html"}
+---
+
+## Index
+
+@api-index[build/jhydro][hash/]
+
+## Reference
+
+@api-docs[build/jhydro][hash/]

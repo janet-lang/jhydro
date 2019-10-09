@@ -1,0 +1,14 @@
+{:title "Key Derivation"
+ :author "Calvin Rose"
+ :license "MIT"
+ :template "mdzdoc/main.html"}
+---
+
+## Index
+
+@api-index[build/jhydro][kdf/]
+
+## Reference
+
+@api-docs[build/jhydro][kdf/]
+

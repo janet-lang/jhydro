@@ -1,0 +1,14 @@
+{:title "Random Number Generation"
+ :author "Calvin Rose"
+ :license "MIT"
+ :template "mdzdoc/main.html"}
+---
+
+## Index
+
+@api-index[build/jhydro][random/]
+
+## Reference
+
+@api-docs[build/jhydro][random/]
+

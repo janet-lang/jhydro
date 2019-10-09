@@ -1,0 +1,14 @@
+{:title "Public Key Signing"
+ :author "Calvin Rose"
+ :license "MIT"
+ :template "mdzdoc/main.html"}
+---
+
+## Index
+
+@api-index[build/jhydro][sign/]
+
+## Reference
+
+@api-docs[build/jhydro][sign/]
+
