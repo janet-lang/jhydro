@@ -549,10 +549,6 @@ static Janet cfun_pwhash_upgrade(int32_t argc, Janet *argv) {
     return janet_wrap_string(janet_string_end(newstored));
 }
 
-/* Key Exchange */
-
-/*****/
-
 /* Utilities */
 
 static Janet cfun_memzero(int32_t argc, Janet *argv) {
@@ -617,7 +613,7 @@ static Janet cfun_pad(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 2);
     JanetBuffer *buffer = janet_getbuffer(argv, 0);
     size_t pad = janet_getsize(argv, 1);
-    janet_buffer_ensure(buffer, buffer->count + pad + 2, 2);
+    janet_buffer_ensure(buffer, buffer->count + pad + 2, 1);
     int result = hydro_pad(buffer->data, buffer->count, pad, buffer->capacity);
     if (result < 0) {
         janet_panic("failed to pad bytes");
@@ -636,6 +632,62 @@ static Janet cfun_unpad(int32_t argc, Janet *argv) {
     }
     buffer->count = result;
     return janet_wrap_buffer(buffer);
+}
+
+/* Key Exchange (KX) */
+
+static Janet util_kx_sessionkeypair(hydro_kx_session_keypair *kp) {
+    JanetKV *st = janet_struct_begin(2);
+    Janet tx = janet_stringv(kp->tx, hydro_kx_SESSIONKEYBYTES);
+    Janet rx = janet_stringv(kp->rx, hydro_kx_SESSIONKEYBYTES);
+    janet_struct_put(st, janet_ckeywordv("tx"), tx);
+    janet_struct_put(st, janet_ckeywordv("rx"), rx);
+    return janet_wrap_struct(janet_struct_end(st));
+}
+
+static Janet cfun_kx_keygen(int32_t argc, Janet *argv) {
+    (void) argv;
+    janet_fixarity(argc, 0);
+    hydro_kx_keypair kp;
+    hydro_kx_keygen(&kp);
+    JanetKV *st = janet_struct_begin(2);
+    Janet pk = janet_stringv(kp.pk, hydro_kx_PUBLICKEYBYTES);
+    Janet sk = janet_stringv(kp.sk, hydro_kx_SECRETKEYBYTES);
+    janet_struct_put(st, janet_ckeywordv("public-key"), pk);
+    janet_struct_put(st, janet_ckeywordv("secret-key"), sk);
+    return janet_wrap_struct(janet_struct_end(st));
+}
+
+static Janet cfun_kx_n_1(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 3);
+    JanetBuffer *packet = janet_getbuffer(argv, 0);
+    JanetByteView psk = util_getnbytes(argv, 1, hydro_kx_PSKBYTES);
+    JanetByteView peer_psk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
+    hydro_kx_session_keypair kp;
+    janet_buffer_ensure(packet, packet->count + hydro_kx_N_PACKET1BYTES, 1);
+    int result = hydro_kx_n_1(&kp, packet->data + packet->count, psk.bytes, peer_psk.bytes);
+    if (result < 0) {
+        janet_panic("failed to generate packet 1 to send to peer");
+    }
+    packet->count += hydro_kx_N_PACKET1BYTES;
+    return util_kx_sessionkeypair(&kp);
+}
+
+static Janet cfun_kx_n_2(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 4);
+    JanetByteView packet = util_getnbytes(argv, 0, hydro_kx_N_PACKET1BYTES);
+    JanetByteView psk = util_getnbytes(argv, 1, hydro_kx_PSKBYTES);
+    JanetByteView static_pk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView static_sk = util_getnbytes(argv, 3, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_keypair static_kp;
+    memcpy(static_kp.sk, static_sk.bytes, hydro_kx_SECRETKEYBYTES);
+    memcpy(static_kp.pk, static_pk.bytes, hydro_kx_PUBLICKEYBYTES);
+    hydro_kx_session_keypair kp;
+    int result = hydro_kx_n_2(&kp, packet.bytes, psk.bytes, &static_kp);
+    if (result < 0) {
+        janet_panic("failed to generate packet 2 to send to peer");
+    }
+    return util_kx_sessionkeypair(&kp);
 }
 
 /****************/
@@ -802,6 +854,19 @@ static const JanetReg cfuns[] = {
         "Pad a buffer according to the ISO/IEC 7816-4 algorithm. Returns the modified buffer."},
     {"util/unpad", cfun_unpad, "(util/unpad buffer blocksize)\n\n"
         "Unpad a buffer padded via util/pad. Returns the modifed buffer."},
+    /* Key Exchange */
+    {"kx/keygen", cfun_kx_keygen, "(kx/keygen)\n\n"
+        "Generate a keypair for use key exchanges. Contains both a public key and a secret key. "
+        "Returns a struct with two entries, and :secret-key and a :public-key."},
+    {"kx/n1", cfun_kx_n_1, "(kx/n1 packet-buf psk peer-pk)\n\n"
+        "Create a session key and generate a packet on the client as the first step in the N variant key exchange. "
+        "Also take a pre-shared key, and the peer's public key. Returns a session key as a struct of two "
+        "entries, :tx and :rx, which are the transmit and receive keys for communicating with the peer."},
+    {"kx/n2", cfun_kx_n_2, "(kx/n2 packet1 psk pk sk)\n\n"
+        "Create a session key as the second step in the N variant key exchange on the server. "
+        "packet1 is what kx/n1 put into a buffer (packet-buf), psk is a pre-shared key, pk is the server's "
+        "public key, and sk is the server's secret key. Returns a session keypair that is a mirror of what is on "
+        "the client, but :tx and :rx are swapped."},
     {NULL, NULL, NULL}
 };
 
@@ -859,5 +924,16 @@ JANET_MODULE_ENTRY(JanetTable *env) {
             "Number of bytes in a secret key for making signatures.");
     janet_def(env, "sign/seed-bytes", janet_wrap_integer(hydro_sign_SEEDBYTES),
             "Number of bytes in a seed for generating a key.");
+
+    /* KX */
+    janet_def(env, "kx/session-key-bytes", janet_wrap_integer(hydro_kx_SESSIONKEYBYTES),
+            "Number of bytes in a session key (tx or rx key). These keys are used to encrypt and "
+            "decrypt messages between two peers.");
+    janet_def(env, "kx/public-key-bytes", janet_wrap_integer(hydro_kx_PUBLICKEYBYTES),
+            "Number of bytes in a public key intended for key exchange.");
+    janet_def(env, "kx/secret-key-bytes", janet_wrap_integer(hydro_kx_SECRETKEYBYTES),
+            "Number of bytes in a secret key intended for key exchange.");
+    janet_def(env, "kx/psk-bytes", janet_wrap_integer(hydro_kx_PSKBYTES),
+            "Number of bytes in a pre-shared key for key exchange.");
 
 }
