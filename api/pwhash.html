@@ -1,0 +1,69 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="../mdzdoc-css/main.css" type="text/css" charset="utf-8">
+    <title>Password Hashing</title>
+    <meta name="description" content="">
+  </head>
+  <body>
+    <!-- Toggles Navigation -->
+    <div id="toc-toggle" class="">
+      <div class="bar topbar"></div>
+      <div class="bar"></div>
+      <div class="bar botbar"></div>
+    </div>
+    <div class="twocol">
+      <div class="toc toc-hidden">
+        <ul>
+          <li><span><a href="../index.html">Jhydro</a></span></li><li class="caret"><span><a href="index.html">API</a></span><ul><li><span><a href="hash.html">General Purpose Hashing</a></span></li><li><span><a href="kdf.html">Key Derivation</a></span></li><li><span class="selected"><a href="pwhash.html">Password Hashing</a></span></li><li><span><a href="sign.html">Public Key Signing</a></span></li><li><span><a href="random.html">Random Number Generation</a></span></li><li><span><a href="secretbox.html">Symmetric Encryption</a></span></li><li><span><a href="util.html">Utilities</a></span></li></ul></li>
+        </ul>
+      </div>
+      <div class="content-wrapper">
+        <h1>Password Hashing</h1>
+        <div class="prevnext-bar">
+          <span class="prev"><a href="kdf.html"><span class="prevnext-text">Key Derivation</span></a></span>
+          <span class="next"><a href="sign.html"><span class="prevnext-text">Public Key Signing</span></a></span>
+        </div>
+        
+
+<h2>Index
+</h2>
+<p><a href="#pwhash/create">pwhash/create</a><span class="divider"> </span><a href="#pwhash/derive-static-key">pwhash/derive-static-key</a><span class="divider"> </span><a href="#pwhash/deterministic">pwhash/deterministic</a><span class="divider"> </span><a href="#pwhash/keygen">pwhash/keygen</a><span class="divider"> </span><a href="#pwhash/reencrypt">pwhash/reencrypt</a><span class="divider"> </span><a href="#pwhash/upgrade">pwhash/upgrade</a><span class="divider"> </span><a href="#pwhash/verify">pwhash/verify</a></p><h2>Reference
+</h2>
+<div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/create">pwhash/create</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/create</span> <span class="mdzsyn-symbol">passwd</span> <span class="mdzsyn-symbol">masterkey</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">opslimit</span> <span class="mdzsyn-symbol">memlimit</span> <span class="mdzsyn-symbol">threads</span>)</code></pre><p>Hash a password and get a blob that can be safely stored in a database. The returned result is a 128 byte string. Can take optional parameters to tune the difficulty of the hash.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/derive-static-key">pwhash/derive-static-key</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/derive-static-key</span> <span class="mdzsyn-symbol">keylen</span> <span class="mdzsyn-symbol">stored</span> <span class="mdzsyn-symbol">passwd</span> <span class="mdzsyn-symbol">ctx</span> <span class="mdzsyn-symbol">master-key</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">opslimit</span> <span class="mdzsyn-symbol">memlimit</span> <span class="mdzsyn-symbol">threads</span>)</code></pre><p>Derive a static key for used in cryptographic applications from a hashed password and other entropy (kept in stored). Returns a string with keylen bytes.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/deterministic">pwhash/deterministic</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/deterministic</span> <span class="mdzsyn-symbol">hlen</span> <span class="mdzsyn-symbol">passwd</span> <span class="mdzsyn-symbol">ctx</span> <span class="mdzsyn-symbol">master-key</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">opslimit</span> <span class="mdzsyn-symbol">memlimit</span> <span class="mdzsyn-symbol">threads</span>)</code></pre><p>Hash a password to produce a high entropy key. The returned hashed password is a string of length hlen.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/keygen">pwhash/keygen</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/keygen</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">buf</span>)</code></pre><p>Generate a master key for use in hashing passwords. The master key is used to encrypt all hashed passwords for an extra level of security. Returns a buffer with the new key.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/reencrypt">pwhash/reencrypt</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/reencrypt</span> <span class="mdzsyn-symbol">stored</span> <span class="mdzsyn-symbol">masterkey</span> <span class="mdzsyn-symbol">new-masterkey</span>)</code></pre><p>Re-encrypt a hashed password under a new master key without needing the original password, only the previously hashed password and master key. Returns the new hashed password as a string.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/upgrade">pwhash/upgrade</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/upgrade</span> <span class="mdzsyn-symbol">stored</span> <span class="mdzsyn-symbol">masterkey</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">opslimit</span> <span class="mdzsyn-symbol">memlimit</span> <span class="mdzsyn-symbol">threads</span>)</code></pre><p>Change the encryption parameters of a key to make decrypting faster or slower. This can be used to scale difficulty of password hashing in the event of hardware advancements. Returns the new password hash as a string.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="pwhash/verify">pwhash/verify</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">pwhash/verify</span> <span class="mdzsyn-symbol">stored</span> <span class="mdzsyn-symbol">passwd</span> <span class="mdzsyn-symbol">master-key</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">opslimit</span> <span class="mdzsyn-symbol">memlimit</span> <span class="mdzsyn-symbol">threads</span>)</code></pre><p>Check if a password matches a stored password hash. Hashing options must be the same as the ones used to created the stored hash.</p></div>
+        <div class="prevnext-bar">
+          <span class="prev"><a href="kdf.html"><span class="prevnext-text">Key Derivation</span></a></span>
+          <span class="next"><a href="sign.html"><span class="prevnext-text">Public Key Signing</span></a></span>
+        </div>
+      </div>
+    </div>
+    <script charset="utf-8">
+      function toggleToc() {
+        var toggler = document.getElementById('toc-toggle');
+        var wrapper = document.querySelector('.toc');
+        wrapper.classList.toggle('toc-hidden');
+        toggler.classList.toggle('open');
+        window.localStorage.setItem('show-toc', toggler.classList.contains('open'));
+      }
+      function addTocToggle() {
+        var el = document.getElementById('toc-toggle');
+        el.addEventListener('click', toggleToc);
+      }
+      window.addEventListener('DOMContentLoaded', addTocToggle);
+      if (window.localStorage.getItem('show-toc') === 'true') {
+        toggleToc()
+      }
+    </script>
+    <footer>
+      <div class="content-wrapper">
+        Copyright &copy; Calvin Rose 2019
+      </div>
+    </footer>
+  </body>
+</html>

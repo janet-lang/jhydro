@@ -1,0 +1,69 @@
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width">
+    <link rel="stylesheet" href="../mdzdoc-css/main.css" type="text/css" charset="utf-8">
+    <title>General Purpose Hashing</title>
+    <meta name="description" content="">
+  </head>
+  <body>
+    <!-- Toggles Navigation -->
+    <div id="toc-toggle" class="">
+      <div class="bar topbar"></div>
+      <div class="bar"></div>
+      <div class="bar botbar"></div>
+    </div>
+    <div class="twocol">
+      <div class="toc toc-hidden">
+        <ul>
+          <li><span><a href="../index.html">Jhydro</a></span></li><li class="caret"><span><a href="index.html">API</a></span><ul><li><span class="selected"><a href="hash.html">General Purpose Hashing</a></span></li><li><span><a href="kdf.html">Key Derivation</a></span></li><li><span><a href="pwhash.html">Password Hashing</a></span></li><li><span><a href="sign.html">Public Key Signing</a></span></li><li><span><a href="random.html">Random Number Generation</a></span></li><li><span><a href="secretbox.html">Symmetric Encryption</a></span></li><li><span><a href="util.html">Utilities</a></span></li></ul></li>
+        </ul>
+      </div>
+      <div class="content-wrapper">
+        <h1>General Purpose Hashing</h1>
+        <div class="prevnext-bar">
+          <span class="prev"><a href="index.html"><span class="prevnext-text">API</span></a></span>
+          <span class="next"><a href="kdf.html"><span class="prevnext-text">Key Derivation</span></a></span>
+        </div>
+        
+
+<h2>Index
+</h2>
+<p><a href="#hash/bytes">hash/bytes</a><span class="divider"> </span><a href="#hash/bytes-max">hash/bytes-max</a><span class="divider"> </span><a href="#hash/bytes-min">hash/bytes-min</a><span class="divider"> </span><a href="#hash/context-bytes">hash/context-bytes</a><span class="divider"> </span><a href="#hash/final">hash/final</a><span class="divider"> </span><a href="#hash/hash">hash/hash</a><span class="divider"> </span><a href="#hash/key-bytes">hash/key-bytes</a><span class="divider"> </span><a href="#hash/keygen">hash/keygen</a><span class="divider"> </span><a href="#hash/new-state">hash/new-state</a><span class="divider"> </span><a href="#hash/update">hash/update</a></p><h2>Reference
+</h2>
+<div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/bytes">hash/bytes</a></span><span class="binding-type">number <code class="binding-realval">32</code></span></div><p>Number of bytes in a generic, simple hash.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/bytes-max">hash/bytes-max</a></span><span class="binding-type">number <code class="binding-realval">65535</code></span></div><p>Maximum number of bytes allowed when creating a keyed hash.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/bytes-min">hash/bytes-min</a></span><span class="binding-type">number <code class="binding-realval">16</code></span></div><p>Minimum number of bytes allowed when creating a keyed hash.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/context-bytes">hash/context-bytes</a></span><span class="binding-type">number <code class="binding-realval">8</code></span></div><p>Number of bytes required in context buffer for hashing.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/final">hash/final</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">hash/final</span> <span class="mdzsyn-symbol">state</span> <span class="mdzsyn-symbol">len</span>)</code></pre><p>Get the final hash after digesting all of the input as a string. The resulting hash will be a string of length len.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/hash">hash/hash</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">hash/hash</span> <span class="mdzsyn-symbol">size</span> <span class="mdzsyn-symbol">input</span> <span class="mdzsyn-symbol">ctx</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">key</span>)</code></pre><p>Hash some input bytes into an output string of length size. Optionally provide a key that can be used to generate different hashes on the same input.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/key-bytes">hash/key-bytes</a></span><span class="binding-type">number <code class="binding-realval">32</code></span></div><p>Number of bytes in a key required for hashing.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/keygen">hash/keygen</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">hash/keygen</span> <span class="mdzsyn-symbol">&amp;opt</span> <span class="mdzsyn-symbol">buf</span>)</code></pre><p>Generate a key suitable for use in hashing. The key is a buffer of at least 32 bytes. If a buffer buf is provided, the first 32 bytes of buf will be set to a new random key. Returns a key buffer.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/new-state">hash/new-state</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">hash/new-state</span> <span class="mdzsyn-symbol">ctx</span> <span class="mdzsyn-symbol">key</span>)</code></pre><p>Create a new hash-state. Takes a context ctx and a key and returns a new abstract type, jhydro/hash-state. Both ctx and key should be byte sequences, of at least lengths 8 and 32 respectively. Returns the new state.</p></div><div class="docstring"><div class="binding-wrap"><span class="binding"><a id="hash/update">hash/update</a></span><span class="binding-type">cfunction</span></div><pre class="mendoza-codeblock"><code data-language="janet">(<span class="mdzsyn-symbol">hash/update</span> <span class="mdzsyn-symbol">state</span> <span class="mdzsyn-symbol">bytes</span>)</code></pre><p>Add more bytes to the hash state. Returns the modified state</p></div>
+        <div class="prevnext-bar">
+          <span class="prev"><a href="index.html"><span class="prevnext-text">API</span></a></span>
+          <span class="next"><a href="kdf.html"><span class="prevnext-text">Key Derivation</span></a></span>
+        </div>
+      </div>
+    </div>
+    <script charset="utf-8">
+      function toggleToc() {
+        var toggler = document.getElementById('toc-toggle');
+        var wrapper = document.querySelector('.toc');
+        wrapper.classList.toggle('toc-hidden');
+        toggler.classList.toggle('open');
+        window.localStorage.setItem('show-toc', toggler.classList.contains('open'));
+      }
+      function addTocToggle() {
+        var el = document.getElementById('toc-toggle');
+        el.addEventListener('click', toggleToc);
+      }
+      window.addEventListener('DOMContentLoaded', addTocToggle);
+      if (window.localStorage.getItem('show-toc') === 'true') {
+        toggleToc()
+      }
+    </script>
+    <footer>
+      <div class="content-wrapper">
+        Copyright &copy; Calvin Rose 2019
+      </div>
+    </footer>
+  </body>
+</html>
