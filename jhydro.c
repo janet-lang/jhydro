@@ -690,6 +690,152 @@ static Janet cfun_kx_n_2(int32_t argc, Janet *argv) {
     return util_kx_sessionkeypair(&kp);
 }
 
+/* KK variant */
+
+static const JanetAbstractType KxState = {
+    "jhydro/kx-state", NULL, NULL, NULL, NULL, NULL, NULL, NULL
+};
+
+static Janet cfun_kx_kk_1(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 4);
+    JanetBuffer *packet1 = janet_getbuffer(argv, 0);
+    JanetByteView static_pk = util_getnbytes(argv, 1, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView pk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView sk = util_getnbytes(argv, 3, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_state *state = janet_abstract(&KxState, sizeof(hydro_kx_state));
+    janet_buffer_ensure(packet1, packet1->count + hydro_kx_KK_PACKET1BYTES, 1);
+    hydro_kx_keypair kp;
+    memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
+    memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
+    int result = hydro_kx_kk_1(state, packet1->data + packet1->count, static_pk.bytes, &kp);
+    if (result < 0) {
+        janet_panic("failed to generate packet 1 to send to peer");
+    }
+    packet1->count += hydro_kx_KK_PACKET1BYTES;
+    return janet_wrap_abstract(state);
+}
+
+static Janet cfun_kx_kk_2(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 5);
+    JanetBuffer *packet2 = janet_getbuffer(argv, 0);
+    janet_buffer_ensure(packet2, packet2->count + hydro_kx_KK_PACKET2BYTES, 1);
+    JanetByteView packet1 = util_getnbytes(argv, 1, hydro_kx_KK_PACKET1BYTES);
+    JanetByteView static_pk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView pk = util_getnbytes(argv, 3, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView sk = util_getnbytes(argv, 4, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_keypair kp;
+    memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
+    memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_session_keypair skp;
+    int result = hydro_kx_kk_2(&skp, packet2->data, packet1.bytes, static_pk.bytes, &kp);
+    if (result < 0) {
+        janet_panic("failed to generate session keypair");
+    }
+    packet2->count += hydro_kx_KK_PACKET2BYTES;
+    return util_kx_sessionkeypair(&skp);
+}
+
+static Janet cfun_kx_kk_3(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 4);
+    hydro_kx_state *state = janet_getabstract(argv, 0, &KxState);
+    JanetByteView packet2 = util_getnbytes(argv, 1, hydro_kx_KK_PACKET2BYTES);
+    JanetByteView pk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView sk = util_getnbytes(argv, 3, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_session_keypair skp;
+    hydro_kx_keypair kp;
+    memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
+    memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
+    int result = hydro_kx_kk_3(state, &skp, packet2.bytes, &kp);
+    if (result < 0) {
+        janet_panic("failed to generate session keypair");
+    }
+    return util_kx_sessionkeypair(&skp);
+}
+
+/* XX Variant */
+
+static Janet cfun_kx_xx_1(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 2);
+    JanetBuffer *packet1 = janet_getbuffer(argv, 0);
+    JanetByteView psk = util_getnbytes(argv, 1, hydro_kx_PSKBYTES);
+    janet_buffer_ensure(packet1, packet1->count + hydro_kx_XX_PACKET1BYTES, 1);
+    hydro_kx_state *state = janet_abstract(&KxState, sizeof(hydro_kx_state));
+    int result = hydro_kx_xx_1(state, packet1->data + packet1->count, psk.bytes);
+    if (result) {
+        janet_panic("failed to generate packet 1 to send to peer");
+    }
+    packet1->count += hydro_kx_XX_PACKET1BYTES;
+    return janet_wrap_abstract(state);
+}
+
+static Janet cfun_kx_xx_2(int32_t argc, Janet *argv) {
+    janet_fixarity(argc, 5);
+    JanetBuffer *packet2 = janet_getbuffer(argv, 0);
+    JanetByteView packet1 = util_getnbytes(argv, 1, hydro_kx_XX_PACKET1BYTES);
+    JanetByteView psk = util_getnbytes(argv, 2, hydro_kx_PSKBYTES);
+    JanetByteView pk = util_getnbytes(argv, 3, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView sk = util_getnbytes(argv, 4, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_keypair kp;
+    memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
+    memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_state *state = janet_abstract(&KxState, sizeof(hydro_kx_state));
+    janet_buffer_extra(packet2, hydro_kx_XX_PACKET2BYTES);
+    int result = hydro_kx_xx_2(state, packet2->data + packet2->count, packet1.bytes, psk.bytes, &kp);
+    if (result < 0) {
+        janet_panic("failed to generate packet 2 to send to peer");
+    }
+    packet2->count += hydro_kx_XX_PACKET2BYTES;
+    return janet_wrap_abstract(state);
+}
+
+static Janet cfun_kx_xx_3(int32_t argc, Janet *argv) {
+    janet_arity(argc, 6, 7);
+    hydro_kx_state *state = janet_getabstract(argv, 0, &KxState);
+    JanetBuffer *packet3 = janet_getbuffer(argv, 1);
+    JanetByteView packet2 = util_getnbytes(argv, 2, hydro_kx_XX_PACKET2BYTES);
+    JanetByteView psk = util_getnbytes(argv, 3, hydro_kx_PSKBYTES);
+    JanetByteView pk = util_getnbytes(argv, 4, hydro_kx_PUBLICKEYBYTES);
+    JanetByteView sk = util_getnbytes(argv, 5, hydro_kx_SECRETKEYBYTES);
+    hydro_kx_keypair kp;
+    hydro_kx_session_keypair skp;
+    memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
+    memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
+    janet_buffer_ensure(packet3, packet3->count + hydro_kx_XX_PACKET3BYTES, 1);
+    uint8_t *peer_pk = NULL;
+    if (argc > 6) {
+        JanetBuffer *buffer = janet_getbuffer(argv, 6);
+        janet_buffer_extra(buffer, hydro_kx_PUBLICKEYBYTES);
+        peer_pk = buffer->data + buffer->count;
+        buffer->count += hydro_kx_PUBLICKEYBYTES;
+    }
+    int result = hydro_kx_xx_3(state, &skp, packet3->data + packet3->count, peer_pk, packet2.bytes, psk.bytes, &kp);
+    if (result < 0) {
+        janet_panic("failed to generate session keypair");
+    }
+    packet3->count += hydro_kx_XX_PACKET3BYTES;
+    return util_kx_sessionkeypair(&skp);
+}
+
+static Janet cfun_kx_xx_4(int32_t argc, Janet *argv) {
+    janet_arity(argc, 3, 4);
+    hydro_kx_state *state = janet_getabstract(argv, 0, &KxState);
+    JanetByteView packet3 = util_getnbytes(argv, 1, hydro_kx_XX_PACKET3BYTES);
+    JanetByteView psk = util_getnbytes(argv, 2, hydro_kx_PSKBYTES);
+    uint8_t *peer_pk = NULL;
+    hydro_kx_session_keypair skp;
+    if (argc > 3) {
+        JanetBuffer *buffer = janet_getbuffer(argv, 3);
+        janet_buffer_extra(buffer, hydro_kx_PUBLICKEYBYTES);
+        peer_pk = buffer->data + buffer->count;
+        buffer->count += hydro_kx_PUBLICKEYBYTES;
+    }
+    int result = hydro_kx_xx_4(state, &skp, peer_pk, packet3.bytes, psk.bytes);
+    if (result) {
+        janet_panic("failed to generate session keypair");
+    }
+    return util_kx_sessionkeypair(&skp);
+}
+
 /****************/
 /* Module Entry */
 /****************/
@@ -867,6 +1013,39 @@ static const JanetReg cfuns[] = {
         "packet1 is what kx/n1 put into a buffer (packet-buf), psk is a pre-shared key, pk is the server's "
         "public key, and sk is the server's secret key. Returns a session keypair that is a mirror of what is on "
         "the client, but :tx and :rx are swapped."},
+    {"kx/kk1", cfun_kx_kk_1, "(kx/kk1 packet-1 static-pk pk sk)\n\n"
+        "Generate the first packet for the KK variant key exchange. Returns a jhydro/ks-state "
+        "abstract which contains some useful state for the key exchange. static-pk is the peer's "
+        "public key, and pk and sk are the client's public and secret keys. Modifies the buffer packet-1 "
+        "by appending new data."},
+    {"kx/kk2", cfun_kx_kk_2, "(kx/kk2 packet-2 packet-1 static-pk pk sk)\n\n"
+        "Generate the second packet and a session keypair in the KK variant key exchange. packet-2 is "
+        "a buffer to put the new packet in. packet-1 is the packet received from the peer. static-pk is the "
+        "other peer's public key, and pk and sk are the local client's public and secret keys. Returns a session keypair, "
+        "which is a struct of two entries, :rx and :tx."},
+    {"kx/kk3", cfun_kx_kk_3, "(kx/kk3 state packet-2 pk sk)\n\n"
+        "Generate a session key on the initiating peer in the KK variant key exchange. state is the "
+        "jhydro/kx-state from step 1, packet-2 is the packet from step 2, and pk and sk are the local client's "
+        "public and secret keys. Returns a session keypair, which is a struct of two entries, :rx and :tx."},
+    {"kx/xx1", cfun_kx_xx_1, "(kx/xx1 packet-1 psk)\n\n"
+        "First step in XX variant key exchange. Takes in a packet buffer and pre-shared key, and "
+        "generates the first packet. Also returns a jhydro/kx-state for use in future steps."},
+    {"kx/xx2", cfun_kx_xx_2, "(kx/xx2 packet-2 packet-1 psk pk sk)\n\n"
+        "Second step in XX variant key exchange. Takes a buffer for writing packet number 2 too, "
+        "packet 1, a pre-shared key, and the local public key and secret key. Writes the second packet "
+        "to packet-2, and returns a jhydro/kx-state."},
+    {"kx/xx3", cfun_kx_xx_3, "(kx/xx3 state packet-3 packet-2 psk pk sk &opt peer-pk)\n\n"
+        "Third step in XX variant key exchange. Takes the state returned from kx/xx1, a buffer "
+        "packet-3 to write the final packet into, the packet packet-2 send from the other peer, a "
+        "pre-shared key psk, and the public and secret keys of the local machine. Optionally "
+        "takes a buffer to write the remote peer's public key into, so you can reject connections if "
+        "they do not match the expected public key. Returns a session keypair, which is a struct with two "
+        "entries, :rx and :tx."},
+    {"kx/xx4", cfun_kx_xx_4, "(kx/xx4 state packet-3 psk &opt peer-pk)\n\n"
+        "Fourth and final step in the XX key exchange variant. Takes the state returned from kx/xx2, "
+        "the packet received from kx/xx3, and a pre-shared key psk. "
+        "Optionally takes a buffer peer-pk, which will have the remote peer's "
+        "public key written appended to it. Returns a session keypair, which contains :tx and :rx entires."},
     {NULL, NULL, NULL}
 };
 
@@ -935,5 +1114,16 @@ JANET_MODULE_ENTRY(JanetTable *env) {
             "Number of bytes in a secret key intended for key exchange.");
     janet_def(env, "kx/psk-bytes", janet_wrap_integer(hydro_kx_PSKBYTES),
             "Number of bytes in a pre-shared key for key exchange.");
-
+    janet_def(env, "kx/n-packet-1-bytes", janet_wrap_integer(hydro_kx_N_PACKET1BYTES),
+            "Number of bytes in the first packet sent in the N variant key exchange.");
+    janet_def(env, "kx/kk-packet-1-bytes", janet_wrap_integer(hydro_kx_KK_PACKET1BYTES),
+            "Number of bytes in the first packet sent in the KK variant key exchange.");
+    janet_def(env, "kx/kk-packet-2-bytes", janet_wrap_integer(hydro_kx_KK_PACKET2BYTES),
+            "Number of bytes in the second packet sent in the KK variant key exchange.");
+    janet_def(env, "kx/xx-packet-1-bytes", janet_wrap_integer(hydro_kx_XX_PACKET1BYTES),
+            "Number of bytes in the first packet sent in the XX variant key exchange.");
+    janet_def(env, "kx/xx-packet-2-bytes", janet_wrap_integer(hydro_kx_XX_PACKET2BYTES),
+            "Number of bytes in the second packet sent in the XX variant key exchange.");
+    janet_def(env, "kx/xx-packet-3-bytes", janet_wrap_integer(hydro_kx_XX_PACKET3BYTES),
+            "Number of bytes in the third packet sent in the XX variant key exchange.");
 }
