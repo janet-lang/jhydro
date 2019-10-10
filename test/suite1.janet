@@ -1,5 +1,5 @@
 (use ../build/jhydro)
-(use ../tester)
+(use ./support/tester)
 
 (deftest
   (test "u32"
