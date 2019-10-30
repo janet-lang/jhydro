@@ -585,10 +585,11 @@ static Janet cfun_compare(int32_t argc, Janet *argv) {
 static Janet cfun_bin2hex(int32_t argc, Janet *argv) {
     janet_arity(argc, 1, 2);
     JanetByteView bin = janet_getbytes(argv, 0);
-    JanetBuffer *hex = (argc == 2) ? janet_getbuffer(argv, 1) : janet_buffer(bin.len * 2);
-    janet_buffer_ensure(hex, 2 * bin.len, 2);
-    hydro_bin2hex((char *)(hex->data + hex->count), bin.len * 2, bin.bytes, bin.len);
-    hex->count += 2 * bin.len;
+    int bin_len = bin.len * 2 + 1;
+    JanetBuffer *hex = (argc == 2) ? janet_getbuffer(argv, 1) : janet_buffer(bin_len);
+    janet_buffer_ensure(hex, bin_len, 2);
+    hydro_bin2hex((char *)(hex->data + hex->count), bin_len, bin.bytes, bin.len);
+    hex->count += bin_len;
     return janet_wrap_buffer(hex);
 }
 
@@ -992,7 +993,7 @@ static const JanetReg cfuns[] = {
     {"util/bin2hex", cfun_bin2hex, "(util/bin2hex bin &opt hex)\n\n"
         "Convert binary data into hexidecimal. The hex representation of bin, the input buffer, is "
         "converted to a ascii hexidecimal and put in the buffer hex, or a new buffer if hex is not supplied. Returns "
-        "hex or a new buffer."},
+        "hex or a new buffer and includes a nul byte (\0) terminator."},
     {"util/hex2bin", cfun_hex2bin, "(util/hex2bin hex &opt bin ignore)\n\n"
         "Convert a hexidecimal string to binary data. Can provide an optional bin to write into instead of creating a new "
         "buffer, and also a string of characters to ignore while reading hex. Returns the buffer bin or a new buffer."},
