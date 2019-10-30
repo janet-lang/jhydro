@@ -102,7 +102,7 @@ static Janet cfun_random_buf(int32_t argc, Janet *argv) {
             buf->count = 0;
         } else {
             outlen = janet_getsize(argv, 1);
-            janet_buffer_ensure(buf, buf->count + outlen, 2);
+            janet_buffer_extra(buf, outlen);
         }
         if (outlen > INT32_MAX) janet_panic("size too large");
         hydro_random_buf(buf->data + buf->count, outlen);
@@ -131,7 +131,7 @@ static Janet cfun_random_buf_deterministic(int32_t argc, Janet *argv) {
     size_t len = janet_getsize(argv, 1);
     if (len > INT32_MAX) janet_panic("size too large");
     JanetByteView seed = util_getnbytes(argv, 2, hydro_random_SEEDBYTES);
-    janet_buffer_ensure(buf, buf->count + len, 2);
+    janet_buffer_extra(buf, len);
     hydro_random_buf_deterministic(buf->data + buf->count, len, seed.bytes);
     buf->count += len;
     return janet_wrap_buffer(buf);
@@ -238,8 +238,7 @@ static Janet cfun_secretbox_encrypt(int32_t argc, Janet *argv) {
     JanetBuffer *cipher;
     if (argc == 5) {
         cipher = janet_getbuffer(argv, 4);
-        janet_buffer_ensure(cipher,
-                cipher->count + msg.len + hydro_secretbox_HEADERBYTES, 2);
+        janet_buffer_extra(cipher, msg.len + hydro_secretbox_HEADERBYTES);
     } else {
         cipher = janet_buffer(msg.len + hydro_secretbox_HEADERBYTES);
     }
@@ -261,8 +260,7 @@ static Janet cfun_secretbox_decrypt(int32_t argc, Janet *argv) {
     JanetBuffer *msg;
     if (argc == 5) {
         msg = janet_getbuffer(argv, 4);
-        janet_buffer_ensure(msg,
-                msg->count + ciphertext.len - hydro_secretbox_HEADERBYTES, 2);
+        janet_buffer_extra(msg, ciphertext.len - hydro_secretbox_HEADERBYTES);
     } else {
         msg = janet_buffer(ciphertext.len - hydro_secretbox_HEADERBYTES);
     }
@@ -585,9 +583,11 @@ static Janet cfun_compare(int32_t argc, Janet *argv) {
 static Janet cfun_bin2hex(int32_t argc, Janet *argv) {
     janet_arity(argc, 1, 2);
     JanetByteView bin = janet_getbytes(argv, 0);
-    JanetBuffer *hex = (argc == 2) ? janet_getbuffer(argv, 1) : janet_buffer(bin.len * 2);
-    janet_buffer_ensure(hex, 2 * bin.len, 2);
-    hydro_bin2hex((char *)(hex->data + hex->count), bin.len * 2, bin.bytes, bin.len);
+    JanetBuffer *hex = (argc == 2) ? janet_getbuffer(argv, 1) : janet_buffer(bin.len * 2 + 1);
+    if (argc == 2) {
+        janet_buffer_extra(hex, 2 * bin.len + 1);
+    }
+    hydro_bin2hex((char *)(hex->data + hex->count), bin.len * 2 + 1, bin.bytes, bin.len);
     hex->count += 2 * bin.len;
     return janet_wrap_buffer(hex);
 }
@@ -600,7 +600,7 @@ static Janet cfun_hex2bin(int32_t argc, Janet *argv) {
     if (argc >= 3 && !janet_checktype(argv[2], JANET_NIL)) {
         ignore = janet_getcstring(argv, 2);
     }
-    janet_buffer_ensure(bin, bin->count + (hex.len >> 1), 2);
+    janet_buffer_extra(bin, (hex.len >> 1));
     int result = hydro_hex2bin(bin->data + bin->count, hex.len >> 1, hex.bytes, hex.len, ignore, NULL);
     if (result < 0) {
         janet_panic("failed to convert hex to binary");
@@ -613,7 +613,7 @@ static Janet cfun_pad(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 2);
     JanetBuffer *buffer = janet_getbuffer(argv, 0);
     size_t pad = janet_getsize(argv, 1);
-    janet_buffer_ensure(buffer, buffer->count + pad + 2, 1);
+    janet_buffer_extra(buffer, pad + 2);
     int result = hydro_pad(buffer->data, buffer->count, pad, buffer->capacity);
     if (result < 0) {
         janet_panic("failed to pad bytes");
@@ -664,7 +664,7 @@ static Janet cfun_kx_n_1(int32_t argc, Janet *argv) {
     JanetByteView psk = util_getnbytes(argv, 1, hydro_kx_PSKBYTES);
     JanetByteView peer_psk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
     hydro_kx_session_keypair kp;
-    janet_buffer_ensure(packet, packet->count + hydro_kx_N_PACKET1BYTES, 1);
+    janet_buffer_extra(packet, hydro_kx_N_PACKET1BYTES);
     int result = hydro_kx_n_1(&kp, packet->data + packet->count, psk.bytes, peer_psk.bytes);
     if (result < 0) {
         janet_panic("failed to generate packet 1 to send to peer");
@@ -703,7 +703,7 @@ static Janet cfun_kx_kk_1(int32_t argc, Janet *argv) {
     JanetByteView pk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
     JanetByteView sk = util_getnbytes(argv, 3, hydro_kx_SECRETKEYBYTES);
     hydro_kx_state *state = janet_abstract(&KxState, sizeof(hydro_kx_state));
-    janet_buffer_ensure(packet1, packet1->count + hydro_kx_KK_PACKET1BYTES, 1);
+    janet_buffer_extra(packet1, hydro_kx_KK_PACKET1BYTES);
     hydro_kx_keypair kp;
     memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
     memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
@@ -718,7 +718,7 @@ static Janet cfun_kx_kk_1(int32_t argc, Janet *argv) {
 static Janet cfun_kx_kk_2(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 5);
     JanetBuffer *packet2 = janet_getbuffer(argv, 0);
-    janet_buffer_ensure(packet2, packet2->count + hydro_kx_KK_PACKET2BYTES, 1);
+    janet_buffer_extra(packet2, hydro_kx_KK_PACKET2BYTES);
     JanetByteView packet1 = util_getnbytes(argv, 1, hydro_kx_KK_PACKET1BYTES);
     JanetByteView static_pk = util_getnbytes(argv, 2, hydro_kx_PUBLICKEYBYTES);
     JanetByteView pk = util_getnbytes(argv, 3, hydro_kx_PUBLICKEYBYTES);
@@ -758,7 +758,7 @@ static Janet cfun_kx_xx_1(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 2);
     JanetBuffer *packet1 = janet_getbuffer(argv, 0);
     JanetByteView psk = util_getnbytes(argv, 1, hydro_kx_PSKBYTES);
-    janet_buffer_ensure(packet1, packet1->count + hydro_kx_XX_PACKET1BYTES, 1);
+    janet_buffer_extra(packet1, hydro_kx_XX_PACKET1BYTES);
     hydro_kx_state *state = janet_abstract(&KxState, sizeof(hydro_kx_state));
     int result = hydro_kx_xx_1(state, packet1->data + packet1->count, psk.bytes);
     if (result) {
@@ -800,7 +800,7 @@ static Janet cfun_kx_xx_3(int32_t argc, Janet *argv) {
     hydro_kx_session_keypair skp;
     memcpy(&kp.pk, pk.bytes, hydro_kx_PUBLICKEYBYTES);
     memcpy(&kp.sk, sk.bytes, hydro_kx_SECRETKEYBYTES);
-    janet_buffer_ensure(packet3, packet3->count + hydro_kx_XX_PACKET3BYTES, 1);
+    janet_buffer_extra(packet3, hydro_kx_XX_PACKET3BYTES);
     uint8_t *peer_pk = NULL;
     if (argc > 6) {
         JanetBuffer *buffer = janet_getbuffer(argv, 6);
