@@ -7,6 +7,6 @@
 
 (declare-native
   :name "jhydro"
-  :cflags [;default-lflags "-Ilibhydrogen"]
+  :cflags [;default-cflags "-Ilibhydrogen"]
   :source @["jhydro.c"
             "libhydrogen/hydrogen.c"])
