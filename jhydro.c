@@ -69,6 +69,7 @@ static int32_t util_getnat(const Janet *argv, int32_t n) {
 /****************************/
 
 static Janet cfun_random_u32(int32_t argc, Janet *argv) {
+    (void) argv;
     janet_fixarity(argc, 0);
     uint32_t x = hydro_random_u32();
     return janet_wrap_number((double) x);
@@ -163,7 +164,7 @@ static Janet cfun_hash_new(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 0, hydro_hash_CONTEXTBYTES);
     JanetByteView key = util_getnbytes(argv, 1, hydro_hash_KEYBYTES);
     hydro_hash_state *state = janet_abstract(&HashState, sizeof(hydro_hash_state));
-    int result = hydro_hash_init(state, ctx.bytes, key.bytes);
+    int result = hydro_hash_init(state, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("failed to create hash-state");
     }
@@ -174,7 +175,7 @@ static Janet cfun_hash_update(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 2);
     hydro_hash_state *state = janet_getabstract(argv, 0, &HashState);
     JanetByteView bytes = janet_getbytes(argv, 1);
-    int result = hydro_hash_update(state, bytes.bytes, bytes.len);
+    int result = hydro_hash_update(state, (const char *) bytes.bytes, bytes.len);
     if (result) {
         janet_panic("failed to update hash-state");
     }
@@ -212,7 +213,7 @@ static Janet cfun_hash_hash(int32_t argc, Janet *argv) {
         key = util_getnbytes(argv, 3, hydro_hash_KEYBYTES);
     }
     uint8_t *out = janet_string_begin(size);
-    int result = hydro_hash_hash(out, size, msg.bytes, msg.len, ctx.bytes, key.bytes);
+    int result = hydro_hash_hash(out, size, (const char *) msg.bytes, msg.len, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("failed to hash message");
     }
@@ -243,7 +244,7 @@ static Janet cfun_secretbox_encrypt(int32_t argc, Janet *argv) {
         cipher = janet_buffer(msg.len + hydro_secretbox_HEADERBYTES);
     }
     int result = hydro_secretbox_encrypt(cipher->data + cipher->count,
-            msg.bytes, msg.len, msg_id, ctx.bytes, key.bytes);
+            msg.bytes, msg.len, msg_id, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("encryption failed");
     }
@@ -265,7 +266,7 @@ static Janet cfun_secretbox_decrypt(int32_t argc, Janet *argv) {
         msg = janet_buffer(ciphertext.len - hydro_secretbox_HEADERBYTES);
     }
     int result = hydro_secretbox_decrypt(msg->data + msg->count,
-            ciphertext.bytes, ciphertext.len, msg_id, ctx.bytes, key.bytes);
+            ciphertext.bytes, ciphertext.len, msg_id, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("decryption failed");
     }
@@ -279,7 +280,7 @@ static Janet cfun_secretbox_probe_create(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 1, hydro_secretbox_CONTEXTBYTES);
     JanetByteView key = util_getnbytes(argv, 2, hydro_secretbox_KEYBYTES);
     uint8_t *probe = janet_string_begin(hydro_secretbox_PROBEBYTES);
-    hydro_secretbox_probe_create(probe, c.bytes, c.len, ctx.bytes, key.bytes);
+    hydro_secretbox_probe_create(probe, c.bytes, c.len, (const char *) ctx.bytes, key.bytes);
     return janet_wrap_string(janet_string_end(probe));
 }
 
@@ -290,7 +291,7 @@ static Janet cfun_secretbox_probe_verify(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_secretbox_CONTEXTBYTES);
     JanetByteView key = util_getnbytes(argv, 2, hydro_secretbox_KEYBYTES);
     return janet_wrap_boolean(
-            !hydro_secretbox_probe_verify(probe.bytes, c.bytes, c.len, ctx.bytes, key.bytes));
+            !hydro_secretbox_probe_verify(probe.bytes, c.bytes, c.len, (const char *) ctx.bytes, key.bytes));
 }
 
 /*******/
@@ -316,7 +317,7 @@ static Janet cfun_kdf_derive_from_key(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_kdf_CONTEXTBYTES);
     JanetByteView key = util_getnbytes(argv, 3, hydro_kdf_KEYBYTES);
     uint8_t *subkey = janet_string_begin(subkey_len);
-    int result = hydro_kdf_derive_from_key(subkey, subkey_len, subkey_id, ctx.bytes, key.bytes);
+    int result = hydro_kdf_derive_from_key(subkey, subkey_len, subkey_id, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("failed to derive key");
     }
@@ -358,7 +359,7 @@ static Janet cfun_sign_create(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 1, hydro_sign_CONTEXTBYTES);
     JanetByteView sk = util_getnbytes(argv, 2, hydro_sign_SECRETKEYBYTES);
     uint8_t *csig = janet_string_begin(hydro_sign_BYTES);
-    int result = hydro_sign_create(csig, msg.bytes, msg.len, ctx.bytes, sk.bytes);
+    int result = hydro_sign_create(csig, msg.bytes, msg.len, (const char *) ctx.bytes, sk.bytes);
     if (result) {
         janet_panic("failed to create signature");
     }
@@ -372,7 +373,7 @@ static Janet cfun_sign_verify(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_sign_CONTEXTBYTES);
     JanetByteView pk = util_getnbytes(argv, 3, hydro_sign_PUBLICKEYBYTES);
     return janet_wrap_boolean(!hydro_sign_verify(
-                csig.bytes, msg.bytes, msg.len, ctx.bytes, pk.bytes));
+                csig.bytes, msg.bytes, msg.len, (const char *) ctx.bytes, pk.bytes));
 }
 
 static const JanetAbstractType SignState = {
@@ -383,7 +384,7 @@ static Janet cfun_sign_new(int32_t argc, Janet *argv) {
     janet_fixarity(argc, 1);
     JanetByteView ctx = util_getnbytes(argv, 0, hydro_sign_CONTEXTBYTES);
     hydro_sign_state *state = janet_abstract(&SignState, sizeof(hydro_sign_state));
-    int result = hydro_sign_init(state, ctx.bytes);
+    int result = hydro_sign_init(state, (const char *) ctx.bytes);
     if (result) {
         janet_panic("failed to create signature state");
     }
@@ -467,8 +468,8 @@ static Janet cfun_pwhash_deterministic(int32_t argc, Janet *argv) {
     JanetByteView mk = util_getnbytes(argv, 3, hydro_pwhash_MASTERKEYBYTES);
     PwhashOpts opts = util_pwhash_opts(argc, argv, 4);
     uint8_t *str = janet_string_begin(h_len);
-    int result = hydro_pwhash_deterministic(str, h_len, passwd.bytes, passwd.len,
-            ctx.bytes, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
+    int result = hydro_pwhash_deterministic(str, h_len, (const char *) passwd.bytes, passwd.len,
+            (const char *) ctx.bytes, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed to hash password");
     }
@@ -481,7 +482,7 @@ static Janet cfun_pwhash_create(int32_t argc, Janet *argv) {
     JanetByteView mk = util_getnbytes(argv, 1, hydro_pwhash_MASTERKEYBYTES);
     PwhashOpts opts = util_pwhash_opts(argc, argv, 2);
     uint8_t *stored = janet_string_begin(hydro_pwhash_STOREDBYTES);
-    int result = hydro_pwhash_create(stored, passwd.bytes,
+    int result = hydro_pwhash_create(stored, (const char *) passwd.bytes,
             passwd.len, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed hashing password");
@@ -495,7 +496,7 @@ static Janet cfun_pwhash_verify(int32_t argc, Janet *argv) {
     JanetByteView passwd = janet_getbytes(argv, 1);
     JanetByteView mk = util_getnbytes(argv, 2, hydro_pwhash_MASTERKEYBYTES);
     PwhashOpts opts = util_pwhash_opts(argc, argv, 3);
-    int result = hydro_pwhash_verify(stored.bytes, passwd.bytes, passwd.len,
+    int result = hydro_pwhash_verify(stored.bytes, (const char *) passwd.bytes, passwd.len,
             mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     return janet_wrap_boolean(!result);
 }
@@ -510,7 +511,9 @@ static Janet cfun_pwhash_derive_static_key(int32_t argc, Janet *argv) {
     PwhashOpts opts = util_pwhash_opts(argc, argv, 5);
     uint8_t *static_key = janet_string_begin(klen);
     int result = hydro_pwhash_derive_static_key(static_key, klen, stored.bytes,
-            passwd.bytes, passwd.len, ctx.bytes, mk.bytes,
+            (const char *) passwd.bytes, passwd.len,
+            (const char *) ctx.bytes,
+            mk.bytes,
             opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed to create static key");
@@ -601,7 +604,9 @@ static Janet cfun_hex2bin(int32_t argc, Janet *argv) {
         ignore = janet_getcstring(argv, 2);
     }
     janet_buffer_extra(bin, (hex.len >> 1));
-    int result = hydro_hex2bin(bin->data + bin->count, hex.len >> 1, hex.bytes, hex.len, ignore, NULL);
+    int result = hydro_hex2bin(bin->data + bin->count,
+            hex.len >> 1, (const char *) hex.bytes, hex.len,
+            ignore, NULL);
     if (result < 0) {
         janet_panic("failed to convert hex to binary");
     }
