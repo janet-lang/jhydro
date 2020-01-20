@@ -150,13 +150,9 @@ static Janet cfun_hash_keygen(int32_t argc, Janet *argv) {
 
 static const JanetAbstractType HashState = {
     "jhydro/hash-state",
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL
+#ifdef JANET_ATEND_NAME
+    JANET_ATEND_NAME
+#endif
 };
 
 static Janet cfun_hash_new(int32_t argc, Janet *argv) {
@@ -377,7 +373,10 @@ static Janet cfun_sign_verify(int32_t argc, Janet *argv) {
 }
 
 static const JanetAbstractType SignState = {
-    "jhydro/sign-state", NULL, NULL, NULL, NULL, NULL, NULL, NULL
+    "jhydro/sign-state",
+#ifdef JANET_ATEND_NAME
+    JANET_ATEND_NAME
+#endif
 };
 
 static Janet cfun_sign_new(int32_t argc, Janet *argv) {
@@ -698,7 +697,10 @@ static Janet cfun_kx_n_2(int32_t argc, Janet *argv) {
 /* KK variant */
 
 static const JanetAbstractType KxState = {
-    "jhydro/kx-state", NULL, NULL, NULL, NULL, NULL, NULL, NULL
+    "jhydro/kx-state",
+#ifdef JANET_ATEND_NAME
+    JANET_ATEND_NAME
+#endif
 };
 
 static Janet cfun_kx_kk_1(int32_t argc, Janet *argv) {
