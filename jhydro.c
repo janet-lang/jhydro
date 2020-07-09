@@ -855,9 +855,9 @@ static const JanetReg cfuns[] = {
     {"random/uniform", cfun_random_uniform, "(random/uniform top)\n\n"
         "Generate a random 32 bit unsigned integer less than top."},
     {"random/buf", cfun_random_buf, "(random/buf buf &opt size)\n\n"
-        "Fill a buffer with random bytes. If size is not provided, will clear "
+        "Fill a buffer with random bytes. If size is not provided, it will clear "
         "and fill the given buffer. If size is provided, will append size random "
-        "bytes to the buffer. Alternatively, you can provide just the size argument, and "
+        "bytes to the buffer. if you provide just the size argument,"
         "a new randomized buffer will be returned."},
     {"random/ratchet", cfun_random_ratchet, "(random/ratchet)\n\n"
         "Increment the internal state of the RNG."},
@@ -866,7 +866,8 @@ static const JanetReg cfuns[] = {
     {"random/buf-deterministic", cfun_random_buf_deterministic,
         "(random/buf-deterministic buf len seed)\n\n"
             "Generate len random bytes and push them into a buffer buf. seed "
-            "is a byte sequence of at least 32 bytes that initializes the state of the RNG. "
+            "is a byte sequence of 32 bytes that initializes the state of the RNG. "
+            "With same seed and len returns always the same buffer. Suitable for testing. "
             "Returns the modified buffer."},
     /* Hashing */
     {"hash/keygen", cfun_hash_keygen, "(hash/keygen &opt buf)\n\n"
@@ -875,7 +876,7 @@ static const JanetReg cfuns[] = {
         "will be set to a new random key. Returns a key buffer."},
     {"hash/new-state", cfun_hash_new, "(hash/new-state ctx key)\n\n"
         "Create a new hash-state. Takes a context ctx and a key and returns a new abstract type, "
-        "jhydro/hash-state. Both ctx and key should be byte sequences, of at least lengths 8 and 32 "
+        "jhydro/hash-state. Both ctx and key should be byte sequences, of lengths 8 and 32 "
         "respectively. Returns the new state."},
     {"hash/update", cfun_hash_update, "(hash/update state bytes)\n\n"
         "Add more bytes to the hash state. Returns the modified state"},
@@ -905,14 +906,15 @@ static const JanetReg cfuns[] = {
         "(secretbox/probe-create cipher-text ctx key)\n\n"
         "Create a probe for some cipher text created by secretbox/encrypt. The "
         "resulting probe is a constant length string that can be used to verify if cipher text "
-        "is valid before decrypting the entire text. Returns a string."},
+        "is valid before decrypting the entire text. Probes can help mitigate "
+        "attack with large invalid ciphertexts. Returns a string."},
     {"secretbox/probe-verify", cfun_secretbox_probe_verify,
         "(secretbox/probe-verify probe cipher-text ctx key)\n\n"
         "Use a probe produced by secretbox/probe-create to check if some cipher text "
         "is genuine. If the cipher text is not forged or tampered with, returns true, otherwise "
         "false. Genuine cipher text can then be decrypted. Returns a boolean."},
     /* KDF */
-    {"kdf/keygen", cfun_kdf_keygen, "(kdf/keygen &opt buf)\n\n"
+    {"df/keygen", cfun_kdf_keygen, "(kdf/keygen &opt buf)\n\n"
         "Generate a key for use in KDFs. Returns the modified buf if provided, or "
         "a new random buffer."},
     {"kdf/derive-from-key", cfun_kdf_derive_from_key,
@@ -932,7 +934,7 @@ static const JanetReg cfuns[] = {
         "pairs, a :secret-key and a :public-key. Each key is a string."},
     {"sign/create", cfun_sign_create, "(sign/create msg ctx sk)\n\n"
         "Create a new sigature from a message, ctx, and secret key. The message "
-        "can be any byte sequence, the context ctx should be a byte sequence of at least "
+        "can be any byte sequence, the context ctx should be a byte sequence of "
         "8 bytes, and the secret key sk should be secret key as generated from sign/keygen or "
         "sign/keygen-deterministic. Returns a signature, which is a 64 byte string."},
     {"sign/verify", cfun_sign_verify, "(sign/verify csig msg ctx pk)\n\n"
@@ -942,7 +944,7 @@ static const JanetReg cfuns[] = {
         "true if the signature is valid, false otherwise."},
     {"sign/new-state", cfun_sign_new, "(sign/new-state ctx)\n\n"
         "Create a new state machine for generating a signature. A state machine allows "
-        "processing a message in chunks to generate a signature. A string ctx of at least 8 bytes "
+        "processing a message in chunks to generate a signature. A string ctx of 8 bytes "
         "is also required, and can be a hard coded string. Returns a new jhydro/sign-state."},
     {"sign/update", cfun_sign_update, "(sign/update state msg)\n\n"
         "Process a message chunk for generating a signature. Returns the modified signature state."},
@@ -1009,8 +1011,8 @@ static const JanetReg cfuns[] = {
         "Unpad a buffer padded via util/pad. Returns the modifed buffer."},
     /* Key Exchange */
     {"kx/keygen", cfun_kx_keygen, "(kx/keygen)\n\n"
-        "Generate a keypair for use key exchanges. Contains both a public key and a secret key. "
-        "Returns a struct with two entries, and :secret-key and a :public-key."},
+        "Generate a keypair for use in key exchanges. Contains both a public key and a secret key. "
+        "Returns a struct with two entries: :secret-key and a :public-key."},
     {"kx/n1", cfun_kx_n_1, "(kx/n1 packet-buf psk peer-pk)\n\n"
         "Create a session key and generate a packet on the client as the first step in the N variant key exchange. "
         "Also take a pre-shared key, and the peer's public key. Returns a session key as a struct of two "
