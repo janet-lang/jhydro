@@ -914,7 +914,7 @@ static const JanetReg cfuns[] = {
         "is genuine. If the cipher text is not forged or tampered with, returns true, otherwise "
         "false. Genuine cipher text can then be decrypted. Returns a boolean."},
     /* KDF */
-    {"df/keygen", cfun_kdf_keygen, "(kdf/keygen &opt buf)\n\n"
+    {"kdf/keygen", cfun_kdf_keygen, "(kdf/keygen &opt buf)\n\n"
         "Generate a key for use in KDFs. Returns the modified buf if provided, or "
         "a new random buffer."},
     {"kdf/derive-from-key", cfun_kdf_derive_from_key,
