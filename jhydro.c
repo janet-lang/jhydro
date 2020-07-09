@@ -285,7 +285,7 @@ static Janet cfun_secretbox_probe_verify(int32_t argc, Janet *argv) {
     JanetByteView probe = util_getnbytes(argv, 0, hydro_secretbox_PROBEBYTES);
     JanetByteView c = janet_getbytes(argv, 1);
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_secretbox_CONTEXTBYTES);
-    JanetByteView key = util_getnbytes(argv, 2, hydro_secretbox_KEYBYTES);
+    JanetByteView key = util_getnbytes(argv, 3, hydro_secretbox_KEYBYTES);
     return janet_wrap_boolean(
             !hydro_secretbox_probe_verify(probe.bytes, c.bytes, c.len, (const char *) ctx.bytes, key.bytes));
 }
