@@ -23,6 +23,7 @@
 #include <janet.h>
 #include <stdlib.h>
 #include <hydrogen.h>
+#include <math.h>
 
 /*********/
 /* Utils */
