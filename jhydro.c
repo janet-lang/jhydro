@@ -199,8 +199,8 @@ static Janet cfun_hash_hash(int32_t argc, Janet *argv) {
     int32_t size = util_getnat(argv, 0);
     if (size < hydro_hash_BYTES_MIN || size > hydro_hash_BYTES_MAX)
         janet_panicf("hash size must be in range [%d, %d], got %v",
-                hydro_hash_BYTES_MIN, hydro_hash_BYTES_MAX,
-                argv[0]);
+                     hydro_hash_BYTES_MIN, hydro_hash_BYTES_MAX,
+                     argv[0]);
     JanetByteView msg = janet_getbytes(argv, 1);
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_hash_CONTEXTBYTES);
     JanetByteView key;
@@ -241,7 +241,7 @@ static Janet cfun_secretbox_encrypt(int32_t argc, Janet *argv) {
         cipher = janet_buffer(msg.len + hydro_secretbox_HEADERBYTES);
     }
     int result = hydro_secretbox_encrypt(cipher->data + cipher->count,
-            msg.bytes, msg.len, msg_id, (const char *) ctx.bytes, key.bytes);
+                                         msg.bytes, msg.len, msg_id, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("encryption failed");
     }
@@ -263,7 +263,7 @@ static Janet cfun_secretbox_decrypt(int32_t argc, Janet *argv) {
         msg = janet_buffer(ciphertext.len - hydro_secretbox_HEADERBYTES);
     }
     int result = hydro_secretbox_decrypt(msg->data + msg->count,
-            ciphertext.bytes, ciphertext.len, msg_id, (const char *) ctx.bytes, key.bytes);
+                                         ciphertext.bytes, ciphertext.len, msg_id, (const char *) ctx.bytes, key.bytes);
     if (result) {
         janet_panic("decryption failed");
     }
@@ -288,7 +288,7 @@ static Janet cfun_secretbox_probe_verify(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_secretbox_CONTEXTBYTES);
     JanetByteView key = util_getnbytes(argv, 3, hydro_secretbox_KEYBYTES);
     return janet_wrap_boolean(
-            !hydro_secretbox_probe_verify(probe.bytes, c.bytes, c.len, (const char *) ctx.bytes, key.bytes));
+               !hydro_secretbox_probe_verify(probe.bytes, c.bytes, c.len, (const char *) ctx.bytes, key.bytes));
 }
 
 /*******/
@@ -306,10 +306,10 @@ static Janet cfun_kdf_derive_from_key(int32_t argc, Janet *argv) {
     int32_t subkey_len = janet_getinteger(argv, 0);
     if (subkey_len < hydro_kdf_BYTES_MIN)
         janet_panicf("subkey length must be at least %d, got %d",
-            hydro_kdf_BYTES_MIN, subkey_len);
+                     hydro_kdf_BYTES_MIN, subkey_len);
     if (subkey_len > hydro_kdf_BYTES_MAX)
         janet_panicf("subkey length must be at most %d, got %d",
-            hydro_kdf_BYTES_MAX, subkey_len);
+                     hydro_kdf_BYTES_MAX, subkey_len);
     uint64_t subkey_id = (uint64_t) janet_getinteger64(argv, 1);
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_kdf_CONTEXTBYTES);
     JanetByteView key = util_getnbytes(argv, 3, hydro_kdf_KEYBYTES);
@@ -370,7 +370,7 @@ static Janet cfun_sign_verify(int32_t argc, Janet *argv) {
     JanetByteView ctx = util_getnbytes(argv, 2, hydro_sign_CONTEXTBYTES);
     JanetByteView pk = util_getnbytes(argv, 3, hydro_sign_PUBLICKEYBYTES);
     return janet_wrap_boolean(!hydro_sign_verify(
-                csig.bytes, msg.bytes, msg.len, (const char *) ctx.bytes, pk.bytes));
+                                  csig.bytes, msg.bytes, msg.len, (const char *) ctx.bytes, pk.bytes));
 }
 
 static const JanetAbstractType SignState = {
@@ -469,7 +469,7 @@ static Janet cfun_pwhash_deterministic(int32_t argc, Janet *argv) {
     PwhashOpts opts = util_pwhash_opts(argc, argv, 4);
     uint8_t *str = janet_string_begin(h_len);
     int result = hydro_pwhash_deterministic(str, h_len, (const char *) passwd.bytes, passwd.len,
-            (const char *) ctx.bytes, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
+                                            (const char *) ctx.bytes, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed to hash password");
     }
@@ -483,7 +483,7 @@ static Janet cfun_pwhash_create(int32_t argc, Janet *argv) {
     PwhashOpts opts = util_pwhash_opts(argc, argv, 2);
     uint8_t *stored = janet_string_begin(hydro_pwhash_STOREDBYTES);
     int result = hydro_pwhash_create(stored, (const char *) passwd.bytes,
-            passwd.len, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
+                                     passwd.len, mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed hashing password");
     }
@@ -497,7 +497,7 @@ static Janet cfun_pwhash_verify(int32_t argc, Janet *argv) {
     JanetByteView mk = util_getnbytes(argv, 2, hydro_pwhash_MASTERKEYBYTES);
     PwhashOpts opts = util_pwhash_opts(argc, argv, 3);
     int result = hydro_pwhash_verify(stored.bytes, (const char *) passwd.bytes, passwd.len,
-            mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
+                                     mk.bytes, opts.opslimit, opts.memlimit, opts.threads);
     return janet_wrap_boolean(!result);
 }
 
@@ -511,10 +511,10 @@ static Janet cfun_pwhash_derive_static_key(int32_t argc, Janet *argv) {
     PwhashOpts opts = util_pwhash_opts(argc, argv, 5);
     uint8_t *static_key = janet_string_begin(klen);
     int result = hydro_pwhash_derive_static_key(static_key, klen, stored.bytes,
-            (const char *) passwd.bytes, passwd.len,
-            (const char *) ctx.bytes,
-            mk.bytes,
-            opts.opslimit, opts.memlimit, opts.threads);
+                 (const char *) passwd.bytes, passwd.len,
+                 (const char *) ctx.bytes,
+                 mk.bytes,
+                 opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed to create static key");
     }
@@ -543,7 +543,7 @@ static Janet cfun_pwhash_upgrade(int32_t argc, Janet *argv) {
     uint8_t *newstored = janet_string_begin(hydro_pwhash_STOREDBYTES);
     memcpy(newstored, stored.bytes, hydro_pwhash_STOREDBYTES);
     int result = hydro_pwhash_upgrade(newstored, mk.bytes,
-            opts.opslimit, opts.memlimit, opts.threads);
+                                      opts.opslimit, opts.memlimit, opts.threads);
     if (result) {
         janet_panic("failed to upgrade password hash");
     }
@@ -605,8 +605,8 @@ static Janet cfun_hex2bin(int32_t argc, Janet *argv) {
     }
     janet_buffer_extra(bin, (hex.len >> 1));
     int result = hydro_hex2bin(bin->data + bin->count,
-            hex.len >> 1, (const char *) hex.bytes, hex.len,
-            ignore, NULL);
+                               hex.len >> 1, (const char *) hex.bytes, hex.len,
+                               ignore, NULL);
     if (result < 0) {
         janet_panic("failed to convert hex to binary");
     }
@@ -851,211 +851,263 @@ static Janet cfun_kx_xx_4(int32_t argc, Janet *argv) {
 static const JanetReg cfuns[] = {
 
     /* Random */
-    {"random/u32", cfun_random_u32, "(random/u32)\n\n"
-        "Generate a psuedo random 32 bit unsigned integer"},
-    {"random/uniform", cfun_random_uniform, "(random/uniform top)\n\n"
-        "Generate a random 32 bit unsigned integer less than top."},
-    {"random/buf", cfun_random_buf, "(random/buf buf &opt size)\n\n"
+    {   "random/u32", cfun_random_u32, "(random/u32)\n\n"
+        "Generate a psuedo random 32 bit unsigned integer"
+    },
+    {   "random/uniform", cfun_random_uniform, "(random/uniform top)\n\n"
+        "Generate a random 32 bit unsigned integer less than top."
+    },
+    {   "random/buf", cfun_random_buf, "(random/buf buf &opt size)\n\n"
         "Fill a buffer with random bytes. If size is not provided, it will clear "
         "and fill the given buffer. If size is provided, will append size random "
         "bytes to the buffer. if you provide just the size argument,"
-        "a new randomized buffer will be returned."},
-    {"random/ratchet", cfun_random_ratchet, "(random/ratchet)\n\n"
-        "Increment the internal state of the RNG."},
-    {"random/reseed", cfun_random_reseed, "(random/reseed)\n\n"
-        "Provide a new random seed for the internal RNG."},
-    {"random/buf-deterministic", cfun_random_buf_deterministic,
+        "a new randomized buffer will be returned."
+    },
+    {   "random/ratchet", cfun_random_ratchet, "(random/ratchet)\n\n"
+        "Increment the internal state of the RNG."
+    },
+    {   "random/reseed", cfun_random_reseed, "(random/reseed)\n\n"
+        "Provide a new random seed for the internal RNG."
+    },
+    {   "random/buf-deterministic", cfun_random_buf_deterministic,
         "(random/buf-deterministic buf len seed)\n\n"
-            "Generate len random bytes and push them into a buffer buf. seed "
-            "is a byte sequence of 32 bytes that initializes the state of the RNG. "
-            "With same seed and len returns always the same buffer. Suitable for testing. "
-            "Returns the modified buffer."},
+        "Generate len random bytes and push them into a buffer buf. seed "
+        "is a byte sequence of 32 bytes that initializes the state of the RNG. "
+        "With same seed and len returns always the same buffer. Suitable for testing. "
+        "Returns the modified buffer."
+    },
     /* Hashing */
-    {"hash/keygen", cfun_hash_keygen, "(hash/keygen &opt buf)\n\n"
+    {   "hash/keygen", cfun_hash_keygen, "(hash/keygen &opt buf)\n\n"
         "Generate a key suitable for use in hashing. The key is a buffer of at "
         "least 32 bytes. If a buffer buf is provided, the first 32 bytes of buf "
-        "will be set to a new random key. Returns a key buffer."},
-    {"hash/new-state", cfun_hash_new, "(hash/new-state ctx key)\n\n"
+        "will be set to a new random key. Returns a key buffer."
+    },
+    {   "hash/new-state", cfun_hash_new, "(hash/new-state ctx key)\n\n"
         "Create a new hash-state. Takes a context ctx and a key and returns a new abstract type, "
         "jhydro/hash-state. Both ctx and key should be byte sequences, of lengths 8 and 32 "
-        "respectively. Returns the new state."},
-    {"hash/update", cfun_hash_update, "(hash/update state bytes)\n\n"
-        "Add more bytes to the hash state. Returns the modified state"},
-    {"hash/final", cfun_hash_final, "(hash/final state len)\n\n"
+        "respectively. Returns the new state."
+    },
+    {   "hash/update", cfun_hash_update, "(hash/update state bytes)\n\n"
+        "Add more bytes to the hash state. Returns the modified state"
+    },
+    {   "hash/final", cfun_hash_final, "(hash/final state len)\n\n"
         "Get the final hash after digesting all of the input as a string. The resulting "
-        "hash will be a string of length len."},
-    {"hash/hash", cfun_hash_hash, "(hash/hash size input ctx &opt key)\n\n"
+        "hash will be a string of length len."
+    },
+    {   "hash/hash", cfun_hash_hash, "(hash/hash size input ctx &opt key)\n\n"
         "Hash some input bytes into an output string of length size. Optionally provide "
-        "a key that can be used to generate different hashes on the same input."},
+        "a key that can be used to generate different hashes on the same input."
+    },
     /* Secret Box - symmetric encryption */
-    {"secretbox/keygen", cfun_secretbox_keygen, "(secretbox/keygen)\n\n"
-        "Generate a key suitable for secretbox. The returned key is a 32 byte buffer."},
-    {"secretbox/encrypt", cfun_secretbox_encrypt,
+    {   "secretbox/keygen", cfun_secretbox_keygen, "(secretbox/keygen)\n\n"
+        "Generate a key suitable for secretbox. The returned key is a 32 byte buffer."
+    },
+    {   "secretbox/encrypt", cfun_secretbox_encrypt,
         "(secretbox/encrypt msg msg-id ctx key &opt buf)\n\n"
         "Encrypt a message with a secretbox key and return the cipher text in a buffer. "
         "Also requires a message id, which is an integer, and a ctx, which is a non-secret "
         "byte-sequence. Lastly, requires a secret symmetric key for encryption. An optional "
         "buffer will prevent Janet from creating a new buffer, and instead append to and return "
-        "the provided buffer."},
-    {"secretbox/decrypt", cfun_secretbox_decrypt,
+        "the provided buffer."
+    },
+    {   "secretbox/decrypt", cfun_secretbox_decrypt,
         "(secretbox/decrypt cipher-text msg-id ctx key &opt buf)\n\n"
         "Decrypt a cipher text that was produced with secretbox/encrypt. msg-id, "
         "ctx, and key must be the same as those used to encrypt the message. An optional "
         "buffer can be used to contain the plain text, otherwise a new buffer is created. "
-        "Returns a buffer containing the plain text."},
-    {"secretbox/probe-create", cfun_secretbox_probe_create,
+        "Returns a buffer containing the plain text."
+    },
+    {   "secretbox/probe-create", cfun_secretbox_probe_create,
         "(secretbox/probe-create cipher-text ctx key)\n\n"
         "Create a probe for some cipher text created by secretbox/encrypt. The "
         "resulting probe is a constant length string that can be used to verify if cipher text "
         "is valid before decrypting the entire text. Probes can help mitigate "
-        "attack with large invalid ciphertexts. Returns a string."},
-    {"secretbox/probe-verify", cfun_secretbox_probe_verify,
+        "attack with large invalid ciphertexts. Returns a string."
+    },
+    {   "secretbox/probe-verify", cfun_secretbox_probe_verify,
         "(secretbox/probe-verify probe cipher-text ctx key)\n\n"
         "Use a probe produced by secretbox/probe-create to check if some cipher text "
         "is genuine. If the cipher text is not forged or tampered with, returns true, otherwise "
-        "false. Genuine cipher text can then be decrypted. Returns a boolean."},
+        "false. Genuine cipher text can then be decrypted. Returns a boolean."
+    },
     /* KDF */
-    {"kdf/keygen", cfun_kdf_keygen, "(kdf/keygen &opt buf)\n\n"
+    {   "kdf/keygen", cfun_kdf_keygen, "(kdf/keygen &opt buf)\n\n"
         "Generate a key for use in KDFs. Returns the modified buf if provided, or "
-        "a new random buffer."},
-    {"kdf/derive-from-key", cfun_kdf_derive_from_key,
+        "a new random buffer."
+    },
+    {   "kdf/derive-from-key", cfun_kdf_derive_from_key,
         "(kdf/derive-from-key sublen subid ctx key)\n\n"
         "Generate a subkey from a master key. Takes a subid, which is "
         "a positive integer that represents the key id, and ctx, which is "
         "an 8 byte string that is usually an application constant. Finally, the "
-        "last parameter is the master key. Returns a string of length sublen."},
+        "last parameter is the master key. Returns a string of length sublen."
+    },
     /* Public Key Signatures */
-    {"sign/keygen", cfun_sign_keygen, "(sign/keygen)\n\n"
+    {   "sign/keygen", cfun_sign_keygen, "(sign/keygen)\n\n"
         "Create a random key pair for public key signing. Returns a struct containing a "
-        ":public-key and a :secret-key as strings."},
-    {"sign/keygen-deterministic", cfun_sign_keygen_deterministic,
+        ":public-key and a :secret-key as strings."
+    },
+    {   "sign/keygen-deterministic", cfun_sign_keygen_deterministic,
         "(sign/keygen-deterministic seed)\n\n"
         "Create a key pair from a seed. Seed should be a byte sequence of at least "
         "32 bytes; random/buf should work well. Returns a struct of two key value "
-        "pairs, a :secret-key and a :public-key. Each key is a string."},
-    {"sign/create", cfun_sign_create, "(sign/create msg ctx sk)\n\n"
+        "pairs, a :secret-key and a :public-key. Each key is a string."
+    },
+    {   "sign/create", cfun_sign_create, "(sign/create msg ctx sk)\n\n"
         "Create a new sigature from a message, ctx, and secret key. The message "
         "can be any byte sequence, the context ctx should be a byte sequence of "
         "8 bytes, and the secret key sk should be secret key as generated from sign/keygen or "
-        "sign/keygen-deterministic. Returns a signature, which is a 64 byte string."},
-    {"sign/verify", cfun_sign_verify, "(sign/verify csig msg ctx pk)\n\n"
+        "sign/keygen-deterministic. Returns a signature, which is a 64 byte string."
+    },
+    {   "sign/verify", cfun_sign_verify, "(sign/verify csig msg ctx pk)\n\n"
         "Check a signature to determine if a message is authentic. csig is the signature as "
         "generated by sign/create or sign/final-create, msg is the message that "
         "we are checking, ctx is the context string, and pk is the public key. Returns a boolean, "
-        "true if the signature is valid, false otherwise."},
-    {"sign/new-state", cfun_sign_new, "(sign/new-state ctx)\n\n"
+        "true if the signature is valid, false otherwise."
+    },
+    {   "sign/new-state", cfun_sign_new, "(sign/new-state ctx)\n\n"
         "Create a new state machine for generating a signature. A state machine allows "
         "processing a message in chunks to generate a signature. A string ctx of 8 bytes "
-        "is also required, and can be a hard coded string. Returns a new jhydro/sign-state."},
-    {"sign/update", cfun_sign_update, "(sign/update state msg)\n\n"
-        "Process a message chunk for generating a signature. Returns the modified signature state."},
-    {"sign/final-create", cfun_sign_final_create, "(sign/final-create state sk)\n\n"
+        "is also required, and can be a hard coded string. Returns a new jhydro/sign-state."
+    },
+    {   "sign/update", cfun_sign_update, "(sign/update state msg)\n\n"
+        "Process a message chunk for generating a signature. Returns the modified signature state."
+    },
+    {   "sign/final-create", cfun_sign_final_create, "(sign/final-create state sk)\n\n"
         "Create a signature from the sign-state. Takes a jhydro/sign-state state and a secret key sk. "
-        "Returns the signature and also modifies the state."},
-    {"sign/final-verify", cfun_sign_final_verify, "(sign/final-verify state csig pk)\n\n"
+        "Returns the signature and also modifies the state."
+    },
+    {   "sign/final-verify", cfun_sign_final_verify, "(sign/final-verify state csig pk)\n\n"
         "Verify a signature with a public key. Given a sign-state state, signature csig, and "
-        "public key pk, return true if csig is valid, otherwise false."},
+        "public key pk, return true if csig is valid, otherwise false."
+    },
     /* Password Hashing */
-    {"pwhash/keygen", cfun_pwhash_keygen, "(pwhash/keygen &opt buf)\n\n"
+    {   "pwhash/keygen", cfun_pwhash_keygen, "(pwhash/keygen &opt buf)\n\n"
         "Generate a master key for use in hashing passwords. The master key is used to "
         "encrypt all hashed passwords for an extra level of security. Returns a buffer with "
-        "the new key."},
-    {"pwhash/deterministic", cfun_pwhash_deterministic,
+        "the new key."
+    },
+    {   "pwhash/deterministic", cfun_pwhash_deterministic,
         "(pwhash/deterministic hlen passwd ctx master-key &opt opslimit memlimit threads)\n\n"
-            "Hash a password to produce a high entropy key. "
-            "The returned hashed password is a string of length hlen."},
-    {"pwhash/create", cfun_pwhash_create,
+        "Hash a password to produce a high entropy key. "
+        "The returned hashed password is a string of length hlen."
+    },
+    {   "pwhash/create", cfun_pwhash_create,
         "(pwhash/create passwd masterkey &opt opslimit memlimit threads)\n\n"
-            "Hash a password and get a blob that can be safely stored in a database. "
-            "The returned result is a 128 byte string. Can take optional parameters to tune "
-            "the difficulty of the hash."},
-    {"pwhash/verify", cfun_pwhash_verify,
+        "Hash a password and get a blob that can be safely stored in a database. "
+        "The returned result is a 128 byte string. Can take optional parameters to tune "
+        "the difficulty of the hash."
+    },
+    {   "pwhash/verify", cfun_pwhash_verify,
         "(pwhash/verify stored passwd master-key &opt opslimit memlimit threads)\n\n"
         "Check if a password matches a stored password hash. Hashing options must be the same as "
-        "the ones used to created the stored hash."},
-    {"pwhash/derive-static-key", cfun_pwhash_derive_static_key,
+        "the ones used to created the stored hash."
+    },
+    {   "pwhash/derive-static-key", cfun_pwhash_derive_static_key,
         "(pwhash/derive-static-key keylen stored passwd ctx master-key &opt opslimit memlimit threads)\n\n"
-        "Derive a static key for used in cryptographic applications from a hashed password and other entropy "
-        "(kept in stored). Returns a string with keylen bytes."},
-    {"pwhash/reencrypt", cfun_pwhash_reencrypt,
+        "Verifies that password is valid for the representative. This function can be used to derive a "
+        "high-entropy key from a password and user-specific hashed data stored in a database. "
+        "Returns a string with keylen bytes."
+    },
+    {   "pwhash/reencrypt", cfun_pwhash_reencrypt,
         "(pwhash/reencrypt stored masterkey new-masterkey)\n\n"
         "Re-encrypt a hashed password under a new master key without needing the original password, only "
-        "the previously hashed password and master key. Returns the new hashed password as a string."},
-    {"pwhash/upgrade", cfun_pwhash_upgrade,
+        "the previously hashed password and master key. Returns the new hashed password as a string."
+    },
+    {   "pwhash/upgrade", cfun_pwhash_upgrade,
         "(pwhash/upgrade stored masterkey &opt opslimit memlimit threads)\n\n"
         "Change the encryption parameters of a key to make decrypting faster or slower. This can "
         "be used to scale difficulty of password hashing in the event of hardware advancements. Returns "
-        "the new password hash as a string."},
+        "the new password hash as a string."
+    },
     /* Utilities */
-    {"util/memzero", cfun_memzero, "(util/memzero buffer)\n\n"
+    {   "util/memzero", cfun_memzero, "(util/memzero buffer)\n\n"
         "Clear memory in a buffer to 0, not changing the size of the buffer. Returns the "
-        "modified buffer."},
-    {"util/++", cfun_increment, "(util/++ buffer)\n\n"
+        "modified buffer."
+    },
+    {   "util/++", cfun_increment, "(util/++ buffer)\n\n"
         "Increment a buffer, treating it as a little endian large integer. If the increment results in an overflow, sets the "
-        "buffer to all zero bytes. Returns the modified buffer."},
-    {"util/=", cfun_equal, "(util/= lhs rhs)\n\n"
+        "buffer to all zero bytes. Returns the modified buffer."
+    },
+    {   "util/=", cfun_equal, "(util/= lhs rhs)\n\n"
         "Compare the contents of two equal length buffers without early returns, which helps prevent side channel attacks. This "
         "is the function that should be used for comparing two buffers with cryptographic content. "
-        "If the two buffers are of different lengths, returns early. Returns a boolen."},
-    {"util/compare", cfun_compare, "(util/compare lhs rhs)\n\n"
-        "Compare two buffers without early returns to help prevent side channel attacks. Returns an integer -1, 0, or 1."},
-    {"util/bin2hex", cfun_bin2hex, "(util/bin2hex bin &opt hex)\n\n"
+        "If the two buffers are of different lengths, returns early. Returns a boolen."
+    },
+    {   "util/compare", cfun_compare, "(util/compare lhs rhs)\n\n"
+        "Compare two buffers without early returns to help prevent side channel attacks. Returns an integer -1, 0, or 1."
+    },
+    {   "util/bin2hex", cfun_bin2hex, "(util/bin2hex bin &opt hex)\n\n"
         "Convert binary data into hexidecimal. The hex representation of bin, the input buffer, is "
         "converted to a ascii hexidecimal and put in the buffer hex, or a new buffer if hex is not supplied. Returns "
-        "hex or a new buffer."},
-    {"util/hex2bin", cfun_hex2bin, "(util/hex2bin hex &opt bin ignore)\n\n"
+        "hex or a new buffer."
+    },
+    {   "util/hex2bin", cfun_hex2bin, "(util/hex2bin hex &opt bin ignore)\n\n"
         "Convert a hexidecimal string to binary data. Can provide an optional bin to write into instead of creating a new "
-        "buffer, and also a string of characters to ignore while reading hex. Returns the buffer bin or a new buffer."},
-    {"util/pad", cfun_pad, "(util/pad buffer blocksize)\n\n"
-        "Pad a buffer according to the ISO/IEC 7816-4 algorithm. Returns the modified buffer."},
-    {"util/unpad", cfun_unpad, "(util/unpad buffer blocksize)\n\n"
-        "Unpad a buffer padded via util/pad. Returns the modifed buffer."},
+        "buffer, and also a string of characters to ignore while reading hex. Returns the buffer bin or a new buffer."
+    },
+    {   "util/pad", cfun_pad, "(util/pad buffer blocksize)\n\n"
+        "Pad a buffer according to the ISO/IEC 7816-4 algorithm. Returns the modified buffer."
+    },
+    {   "util/unpad", cfun_unpad, "(util/unpad buffer blocksize)\n\n"
+        "Unpad a buffer padded via util/pad. Returns the modifed buffer."
+    },
     /* Key Exchange */
-    {"kx/keygen", cfun_kx_keygen, "(kx/keygen)\n\n"
+    {   "kx/keygen", cfun_kx_keygen, "(kx/keygen)\n\n"
         "Generate a keypair for use in key exchanges. Contains both a public key and a secret key. "
-        "Returns a struct with two entries: :secret-key and a :public-key."},
-    {"kx/n1", cfun_kx_n_1, "(kx/n1 packet-buf psk peer-pk)\n\n"
+        "Returns a struct with two entries: :secret-key and a :public-key."
+    },
+    {   "kx/n1", cfun_kx_n_1, "(kx/n1 packet-buf psk peer-pk)\n\n"
         "Create a session key and generate a packet on the client as the first step in the N variant key exchange. "
         "Also take a pre-shared key, and the peer's public key. Returns a session key as a struct of two "
-        "entries, :tx and :rx, which are the transmit and receive keys for communicating with the peer."},
-    {"kx/n2", cfun_kx_n_2, "(kx/n2 packet1 psk pk sk)\n\n"
+        "entries, :tx and :rx, which are the transmit and receive keys for communicating with the peer."
+    },
+    {   "kx/n2", cfun_kx_n_2, "(kx/n2 packet1 psk pk sk)\n\n"
         "Create a session key as the second step in the N variant key exchange on the server. "
         "packet1 is what kx/n1 put into a buffer (packet-buf), psk is a pre-shared key, pk is the server's "
         "public key, and sk is the server's secret key. Returns a session keypair that is a mirror of what is on "
-        "the client, but :tx and :rx are swapped."},
-    {"kx/kk1", cfun_kx_kk_1, "(kx/kk1 packet-1 static-pk pk sk)\n\n"
+        "the client, but :tx and :rx are swapped."
+    },
+    {   "kx/kk1", cfun_kx_kk_1, "(kx/kk1 packet-1 static-pk pk sk)\n\n"
         "Generate the first packet for the KK variant key exchange. Returns a jhydro/ks-state "
         "abstract which contains some useful state for the key exchange. static-pk is the peer's "
         "public key, and pk and sk are the client's public and secret keys. Modifies the buffer packet-1 "
-        "by appending new data."},
-    {"kx/kk2", cfun_kx_kk_2, "(kx/kk2 packet-2 packet-1 static-pk pk sk)\n\n"
+        "by appending new data."
+    },
+    {   "kx/kk2", cfun_kx_kk_2, "(kx/kk2 packet-2 packet-1 static-pk pk sk)\n\n"
         "Generate the second packet and a session keypair in the KK variant key exchange. packet-2 is "
         "a buffer to put the new packet in. packet-1 is the packet received from the peer. static-pk is the "
         "other peer's public key, and pk and sk are the local client's public and secret keys. Returns a session keypair, "
-        "which is a struct of two entries, :rx and :tx."},
-    {"kx/kk3", cfun_kx_kk_3, "(kx/kk3 state packet-2 pk sk)\n\n"
+        "which is a struct of two entries, :rx and :tx."
+    },
+    {   "kx/kk3", cfun_kx_kk_3, "(kx/kk3 state packet-2 pk sk)\n\n"
         "Generate a session key on the initiating peer in the KK variant key exchange. state is the "
         "jhydro/kx-state from step 1, packet-2 is the packet from step 2, and pk and sk are the local client's "
-        "public and secret keys. Returns a session keypair, which is a struct of two entries, :rx and :tx."},
-    {"kx/xx1", cfun_kx_xx_1, "(kx/xx1 packet-1 psk)\n\n"
+        "public and secret keys. Returns a session keypair, which is a struct of two entries, :rx and :tx."
+    },
+    {   "kx/xx1", cfun_kx_xx_1, "(kx/xx1 packet-1 psk)\n\n"
         "First step in XX variant key exchange. Takes in a packet buffer and pre-shared key, and "
-        "generates the first packet. Also returns a jhydro/kx-state for use in future steps."},
-    {"kx/xx2", cfun_kx_xx_2, "(kx/xx2 packet-2 packet-1 psk pk sk)\n\n"
+        "generates the first packet. Also returns a jhydro/kx-state for use in future steps."
+    },
+    {   "kx/xx2", cfun_kx_xx_2, "(kx/xx2 packet-2 packet-1 psk pk sk)\n\n"
         "Second step in XX variant key exchange. Takes a buffer for writing packet number 2 too, "
         "packet 1, a pre-shared key, and the local public key and secret key. Writes the second packet "
-        "to packet-2, and returns a jhydro/kx-state."},
-    {"kx/xx3", cfun_kx_xx_3, "(kx/xx3 state packet-3 packet-2 psk pk sk &opt peer-pk)\n\n"
+        "to packet-2, and returns a jhydro/kx-state."
+    },
+    {   "kx/xx3", cfun_kx_xx_3, "(kx/xx3 state packet-3 packet-2 psk pk sk &opt peer-pk)\n\n"
         "Third step in XX variant key exchange. Takes the state returned from kx/xx1, a buffer "
         "packet-3 to write the final packet into, the packet packet-2 send from the other peer, a "
         "pre-shared key psk, and the public and secret keys of the local machine. Optionally "
         "takes a buffer to write the remote peer's public key into, so you can reject connections if "
         "they do not match the expected public key. Returns a session keypair, which is a struct with two "
-        "entries, :rx and :tx."},
-    {"kx/xx4", cfun_kx_xx_4, "(kx/xx4 state packet-3 psk &opt peer-pk)\n\n"
+        "entries, :rx and :tx."
+    },
+    {   "kx/xx4", cfun_kx_xx_4, "(kx/xx4 state packet-3 psk &opt peer-pk)\n\n"
         "Fourth and final step in the XX key exchange variant. Takes the state returned from kx/xx2, "
         "the packet received from kx/xx3, and a pre-shared key psk. "
         "Optionally takes a buffer peer-pk, which will have the remote peer's "
-        "public key written appended to it. Returns a session keypair, which contains :tx and :rx entires."},
+        "public key written appended to it. Returns a session keypair, which contains :tx and :rx entires."
+    },
     {NULL, NULL, NULL}
 };
 
@@ -1067,73 +1119,73 @@ JANET_MODULE_ENTRY(JanetTable *env) {
 
     /* Random */
     janet_def(env, "random/seed-bytes", janet_wrap_integer(hydro_random_SEEDBYTES),
-            "Number of bytes in a seed for the RNG.");
+              "Number of bytes in a seed for the RNG.");
 
     /* Hashing */
     janet_def(env, "hash/bytes", janet_wrap_integer(hydro_hash_BYTES),
-            "Number of bytes in a generic, simple hash.");
+              "Number of bytes in a generic, simple hash.");
     janet_def(env, "hash/bytes-max", janet_wrap_integer(hydro_hash_BYTES_MAX),
-            "Maximum number of bytes allowed when creating a keyed hash.");
+              "Maximum number of bytes allowed when creating a keyed hash.");
     janet_def(env, "hash/bytes-min", janet_wrap_integer(hydro_hash_BYTES_MIN),
-            "Minimum number of bytes allowed when creating a keyed hash.");
+              "Minimum number of bytes allowed when creating a keyed hash.");
     janet_def(env, "hash/context-bytes", janet_wrap_integer(hydro_hash_CONTEXTBYTES),
-            "Number of bytes required in context buffer for hashing.");
+              "Number of bytes required in context buffer for hashing.");
     janet_def(env, "hash/key-bytes", janet_wrap_integer(hydro_hash_KEYBYTES),
-            "Number of bytes in a key required for hashing.");
+              "Number of bytes in a key required for hashing.");
 
     /* Secretbox */
     janet_def(env, "secretbox/context-bytes",
-            janet_wrap_integer(hydro_secretbox_CONTEXTBYTES),
-            "Number of bytes in a context for secretbox functions.");
+              janet_wrap_integer(hydro_secretbox_CONTEXTBYTES),
+              "Number of bytes in a context for secretbox functions.");
     janet_def(env, "secretbox/header-bytes", janet_wrap_integer(hydro_secretbox_HEADERBYTES),
-            "Number of bytes in the header of an encrypted message.");
+              "Number of bytes in the header of an encrypted message.");
     janet_def(env, "secretbox/key-bytes", janet_wrap_integer(hydro_secretbox_KEYBYTES),
-            "Number of bytes in a secretbox key.");
+              "Number of bytes in a secretbox key.");
     janet_def(env, "secretbox/probe-bytes", janet_wrap_integer(hydro_secretbox_PROBEBYTES),
-            "Number of bytes in a secretbox probe.");
+              "Number of bytes in a secretbox probe.");
 
     /* KDF */
     janet_def(env, "kdf/context-bytes", janet_wrap_integer(hydro_kdf_CONTEXTBYTES),
-            "Number of bytes in context argument to jhydro/kdf functions.");
+              "Number of bytes in context argument to jhydro/kdf functions.");
     janet_def(env, "kdf/key-bytes", janet_wrap_integer(hydro_kdf_KEYBYTES),
-            "Number of bytes in a kdf key.");
+              "Number of bytes in a kdf key.");
     janet_def(env, "kdf/bytes-max", janet_wrap_integer(hydro_kdf_BYTES_MAX),
-            "Maximum number of bytes allowed in kdf generated key.");
+              "Maximum number of bytes allowed in kdf generated key.");
     janet_def(env, "kdf/bytes-min", janet_wrap_integer(hydro_kdf_BYTES_MIN),
-            "Minimum number of bytes allowed in kdf generated key.");
+              "Minimum number of bytes allowed in kdf generated key.");
 
     /* Signing */
     janet_def(env, "sign/bytes", janet_wrap_integer(hydro_sign_BYTES),
-            "Number of bytes in a signature.");
+              "Number of bytes in a signature.");
     janet_def(env, "sign/context-bytes", janet_wrap_integer(hydro_sign_CONTEXTBYTES),
-            "Number of bytes needed for a signature context.");
+              "Number of bytes needed for a signature context.");
     janet_def(env, "sign/public-key-bytes", janet_wrap_integer(hydro_sign_PUBLICKEYBYTES),
-            "Number of bytes in a public key for making signatures.");
+              "Number of bytes in a public key for making signatures.");
     janet_def(env, "sign/secret-key-bytes", janet_wrap_integer(hydro_sign_SECRETKEYBYTES),
-            "Number of bytes in a secret key for making signatures.");
+              "Number of bytes in a secret key for making signatures.");
     janet_def(env, "sign/seed-bytes", janet_wrap_integer(hydro_sign_SEEDBYTES),
-            "Number of bytes in a seed for generating a key.");
+              "Number of bytes in a seed for generating a key.");
 
     /* KX */
     janet_def(env, "kx/session-key-bytes", janet_wrap_integer(hydro_kx_SESSIONKEYBYTES),
-            "Number of bytes in a session key (tx or rx key). These keys are used to encrypt and "
-            "decrypt messages between two peers.");
+              "Number of bytes in a session key (tx or rx key). These keys are used to encrypt and "
+              "decrypt messages between two peers.");
     janet_def(env, "kx/public-key-bytes", janet_wrap_integer(hydro_kx_PUBLICKEYBYTES),
-            "Number of bytes in a public key intended for key exchange.");
+              "Number of bytes in a public key intended for key exchange.");
     janet_def(env, "kx/secret-key-bytes", janet_wrap_integer(hydro_kx_SECRETKEYBYTES),
-            "Number of bytes in a secret key intended for key exchange.");
+              "Number of bytes in a secret key intended for key exchange.");
     janet_def(env, "kx/psk-bytes", janet_wrap_integer(hydro_kx_PSKBYTES),
-            "Number of bytes in a pre-shared key for key exchange.");
+              "Number of bytes in a pre-shared key for key exchange.");
     janet_def(env, "kx/n-packet-1-bytes", janet_wrap_integer(hydro_kx_N_PACKET1BYTES),
-            "Number of bytes in the first packet sent in the N variant key exchange.");
+              "Number of bytes in the first packet sent in the N variant key exchange.");
     janet_def(env, "kx/kk-packet-1-bytes", janet_wrap_integer(hydro_kx_KK_PACKET1BYTES),
-            "Number of bytes in the first packet sent in the KK variant key exchange.");
+              "Number of bytes in the first packet sent in the KK variant key exchange.");
     janet_def(env, "kx/kk-packet-2-bytes", janet_wrap_integer(hydro_kx_KK_PACKET2BYTES),
-            "Number of bytes in the second packet sent in the KK variant key exchange.");
+              "Number of bytes in the second packet sent in the KK variant key exchange.");
     janet_def(env, "kx/xx-packet-1-bytes", janet_wrap_integer(hydro_kx_XX_PACKET1BYTES),
-            "Number of bytes in the first packet sent in the XX variant key exchange.");
+              "Number of bytes in the first packet sent in the XX variant key exchange.");
     janet_def(env, "kx/xx-packet-2-bytes", janet_wrap_integer(hydro_kx_XX_PACKET2BYTES),
-            "Number of bytes in the second packet sent in the XX variant key exchange.");
+              "Number of bytes in the second packet sent in the XX variant key exchange.");
     janet_def(env, "kx/xx-packet-3-bytes", janet_wrap_integer(hydro_kx_XX_PACKET3BYTES),
-            "Number of bytes in the third packet sent in the XX variant key exchange.");
+              "Number of bytes in the third packet sent in the XX variant key exchange.");
 }
