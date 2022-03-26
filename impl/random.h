@@ -23,12 +23,14 @@ static TLS struct {
 # include "random/mbed.h"
 #elif defined(RIOT_VERSION)
 # include "random/riot.h"
+#elif defined(STM32F4)
+# include "random/stm32.h"
 #else
-#error Unsupported platform
+# error Unsupported platform
 #endif
 
 static void
-hydro_random_check_initialized(void)
+hydro_random_ensure_initialized(void)
 {
     if (hydro_random_context.initialized == 0) {
         if (hydro_random_init() != 0) {
@@ -55,7 +57,7 @@ hydro_random_u32(void)
 {
     uint32_t v;
 
-    hydro_random_check_initialized();
+    hydro_random_ensure_initialized();
     if (hydro_random_context.available < 4) {
         hydro_random_ratchet();
     }
@@ -91,7 +93,7 @@ hydro_random_buf(void *out, size_t out_len)
     size_t   i;
     size_t   leftover;
 
-    hydro_random_check_initialized();
+    hydro_random_ensure_initialized();
     for (i = 0; i < out_len / gimli_RATE; i++) {
         gimli_core_u8(hydro_random_context.state, 0);
         memcpy(p + i * gimli_RATE, hydro_random_context.state, gimli_RATE);
@@ -139,5 +141,5 @@ void
 hydro_random_reseed(void)
 {
     hydro_random_context.initialized = 0;
-    hydro_random_check_initialized();
+    hydro_random_ensure_initialized();
 }
