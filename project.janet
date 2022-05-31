@@ -1,5 +1,6 @@
 (declare-project
   :name "jhydro"
+  :description "Lightweight cryptographic and random number generation utils for Janet. Based on libhydrogen."
   :author "Calvin Rose"
   :license "MIT"
   :url "https://github.com/janet-lang/jhydro"
