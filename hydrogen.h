@@ -2,26 +2,30 @@
 #define hydrogen_H
 
 #if !(defined(__linux__) && defined(__KERNEL__))
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdlib.h>
+#    include <stdbool.h>
+#    include <stdint.h>
+#    include <stdlib.h>
+#else
+#    include <linux/random.h>
+#    include <linux/string.h>
+#    include <linux/types.h>
 #endif
 
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
+#if !defined(__cplusplus) && defined(__GNUC__)
+#    pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
 #endif
 
 #ifdef __cplusplus
-#ifdef __GNUC__
-#pragma GCC diagnostic ignored "-Wlong-long"
-#endif
+#    ifdef __GNUC__
+#        pragma GCC diagnostic ignored "-Wlong-long"
+#    endif
 extern "C" {
 #endif
 
 #if defined(__clang__) || defined(__GNUC__)
-#define _hydro_attr_(X) __attribute__(X)
+#    define _hydro_attr_(X) __attribute__(X)
 #else
-#define _hydro_attr_(X)
+#    define _hydro_attr_(X)
 #endif
 #define _hydro_attr_deprecated_         _hydro_attr_((deprecated))
 #define _hydro_attr_malloc_             _hydro_attr_((malloc))
@@ -31,11 +35,11 @@ extern "C" {
 #define _hydro_attr_weak_               _hydro_attr_((weak))
 
 #if defined(__INTEL_COMPILER) || defined(_MSC_VER)
-#define _hydro_attr_aligned_(X) __declspec(align(X))
+#    define _hydro_attr_aligned_(X) __declspec(align(X))
 #elif defined(__clang__) || defined(__GNUC__)
-#define _hydro_attr_aligned_(X) _hydro_attr_((aligned(X)))
+#    define _hydro_attr_aligned_(X) _hydro_attr_((aligned(X)))
 #else
-#define _hydro_attr_aligned_(X)
+#    define _hydro_attr_aligned_(X)
 #endif
 
 #define HYDRO_VERSION_MAJOR 1
@@ -325,9 +329,9 @@ int hydro_unpad(const unsigned char *buf, size_t padded_buflen, size_t blocksize
 #define HYDRO_HWTYPE_ATMEGA328 1
 
 #ifndef HYDRO_HWTYPE
-#ifdef __AVR__
-#define HYDRO_HWTYPE HYDRO_HWTYPE_ATMEGA328
-#endif
+#    ifdef __AVR__
+#        define HYDRO_HWTYPE HYDRO_HWTYPE_ATMEGA328
+#    endif
 #endif
 
 #ifdef __cplusplus

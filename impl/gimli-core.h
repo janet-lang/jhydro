@@ -1,7 +1,9 @@
 #ifdef __SSE2__
-#include "gimli-core/sse2.h"
+#    include "gimli-core/sse2.h"
+#elif defined(__aarch64__) || defined(_M_ARM64)
+#    include "gimli-core/aarch64.h"
 #else
-#include "gimli-core/portable.h"
+#    include "gimli-core/portable.h"
 #endif
 
 static void
