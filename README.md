@@ -26,7 +26,7 @@ from the jhydro repository directory. You can then navigate to
 ## Building
 
 ```
-jpm build
+janet-pm build
 ```
 
 To build the library.
@@ -34,7 +34,7 @@ To build the library.
 ## Testing
 
 ```
-jpm test
+janet-pm test
 ```
 
 ## License

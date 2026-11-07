@@ -1,4 +1,4 @@
-(use ../build/jhydro)
+(use ../_build/develop/jhydro)
 (use spork/test)
 
 (start-suite 3)

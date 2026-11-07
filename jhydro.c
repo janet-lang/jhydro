@@ -206,7 +206,7 @@ static Janet cfun_hash_hash(int32_t argc, Janet *argv) {
     JanetByteView key;
     key.bytes = NULL;
     key.len = 0;
-    if (argc >= 4 && !janet_checktype(argv[4], JANET_NIL)) {
+    if (argc >= 4 && !janet_checktype(argv[3], JANET_NIL)) {
         key = util_getnbytes(argv, 3, hydro_hash_KEYBYTES);
     }
     uint8_t *out = janet_string_begin(size);
